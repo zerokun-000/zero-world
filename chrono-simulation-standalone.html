@@ -2301,6 +2301,13 @@ introBtn.addEventListener('click', function(){
   introPage.style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
   setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
+  // 在用户手势内创建 AudioContext，避免浏览器 autoplay 策略挂起
+  if(!bgmCtx){
+    try {
+      bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(bgmCtx.state === 'suspended') bgmCtx.resume();
+    } catch(e){}
+  }
   // 用户交互后启动BGM和螺旋
   setTimeout(initBGM, 200);
   setTimeout(initSpiral, 100);
@@ -2314,7 +2321,12 @@ var bgmGain = null;
 function initBGM(){
   if(bgmRunning) return;
   try {
-    bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(!bgmCtx){
+      bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(bgmCtx.state === 'suspended') bgmCtx.resume();
+    }
+    // 确保 AudioContext 处于运行状态
+    if(bgmCtx.state === 'suspended') bgmCtx.resume();
     bgmRunning = true;
 
     // 主增益
