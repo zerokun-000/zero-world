@@ -900,19 +900,20 @@ body[data-week="2"] #gate::before {
 .review-story-btn {
   margin-top: 20px;
   padding: 8px 20px;
-  background: transparent;
+  background: rgba(200,168,80,.06);
   border: 1px solid var(--gold-dim);
-  color: var(--gold-dim);
+  color: var(--gold);
   font-size: 12px;
   cursor: pointer;
   transition: all .3s;
   letter-spacing: 2px;
   align-self: center;
+  opacity: 0.7;
 }
 .review-story-btn:hover {
   border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(200,168,80,.08);
+  opacity: 1;
+  background: rgba(200,168,80,.12);
 }
 #review-back-btn {
   position: fixed;
