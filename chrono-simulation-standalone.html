@@ -2460,6 +2460,7 @@ function setBGMMode(mode){
   }
   bgmRunning = true;
   _currentMode = mode;
+  bgmMode = mode;
 
   masterBGM = bgmCtx.createGain();
   masterBGM.gain.value = 0.09;
@@ -2523,8 +2524,8 @@ function startBGM_London(){
 
 // ===== 上海 · 百乐门（夜上海、爵士、烟熏）=====
 function startBGM_Shanghai(){
-  // 低音 walking bass：C-A-F-G 循环
-  var bassNotes = [65.4, 55.0, 43.7, 49.0]; // C2, A1, F1, G1
+  // 低音 walking bass：C-A-F-G 循环（两个八度上移，手机可听）
+  var bassNotes = [261.6, 220.0, 174.6, 196.0]; // C4, A3, F3, G3
   var bi = 0;
   _scheduleLoop(2400, function(now){
     var b = bgmCtx.createOscillator();
@@ -2674,10 +2675,11 @@ function startBGM_Clock(){
 // ===== Zelo 路线（地下逃离、紧张暗流）=====
 function startBGM_Zelo(){
   _osc('sine', 110, 0.1);
-  // 快速心跳节奏
+  _osc('sine', 165, 0.04); // 五度泛音暗流
+  // 快速心跳节奏（140Hz，手机可听）
   _scheduleLoop(900, function(now){
     var p = bgmCtx.createOscillator();
-    p.type = 'sine'; p.frequency.value = 70;
+    p.type = 'sine'; p.frequency.value = 140;
     var env = bgmCtx.createGain();
     env.gain.setValueAtTime(0.06, now);
     env.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
@@ -2685,13 +2687,65 @@ function startBGM_Zelo(){
     p.start(now); p.stop(now + 0.3);
     bgmNodes.push(p, env);
   });
+  // 高频金属颤音（间歇性，像警报在远处响）
+  _scheduleLoop(4200, function(now){
+    var s = bgmCtx.createOscillator();
+    s.type = 'sine'; s.frequency.value = 880;
+    s.frequency.linearRampToValueAtTime(920, now + 0.6);
+    s.frequency.linearRampToValueAtTime(880, now + 1.2);
+    var env = bgmCtx.createGain();
+    env.gain.setValueAtTime(0.03, now);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+    s.connect(env); env.connect(masterBGM);
+    s.start(now); s.stop(now + 1.5);
+    bgmNodes.push(s, env);
+  });
 }
 
-// ===== 汇聚结局 =====
+// ===== 汇聚结局（空灵、上升、时间溶解）=====
 function startBGM_Convergence(){
   _osc('sine', 110, 0.12);
   _osc('sine', 165, 0.05);
   _osc('sine', 220, 0.03);
+
+  // 缓慢呼吸扫频（给和弦增加潮汐感）
+  var breath = bgmCtx.createOscillator();
+  breath.type = 'sine'; breath.frequency.value = 330;
+  var breathFilter = bgmCtx.createBiquadFilter();
+  breathFilter.type = 'lowpass'; breathFilter.frequency.value = 350; breathFilter.Q.value = 0.5;
+  breath.connect(breathFilter);
+  var breathGain = bgmCtx.createGain(); breathGain.gain.value = 0.03;
+  breathFilter.connect(breathGain); breathGain.connect(masterBGM);
+  breath.start();
+  bgmNodes.push(breath, breathFilter, breathGain);
+
+  (function tidalSweep(){
+    if(!bgmRunning || _currentMode !== 'convergence') return;
+    var t = bgmCtx.currentTime;
+    breathFilter.frequency.setValueAtTime(120 + 500 * (0.5 + 0.5 * Math.sin(t * 0.015 * Math.PI * 2)), t);
+    var tid = setTimeout(tidalSweep, 2500);
+    bgmTimers.push(tid);
+  })();
+
+  // 稀疏空灵铃（更高更飘，每 8~12 秒一次）
+  var bellNotes = [660, 880, 784, 1047, 932, 660]; // E5 A5 G5 C6 Bb5
+  var bellIndex = 0;
+  (function playBell(){
+    if(!bgmRunning || _currentMode !== 'convergence') return;
+    var now = bgmCtx.currentTime;
+    var freq = bellNotes[bellIndex % bellNotes.length];
+    bellIndex++;
+    var o = bgmCtx.createOscillator();
+    o.type = 'sine'; o.frequency.value = freq;
+    var env = bgmCtx.createGain();
+    env.gain.setValueAtTime(0.04, now);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
+    o.connect(env); env.connect(masterBGM);
+    o.start(now); o.stop(now + 3.0);
+    bgmNodes.push(o, env);
+    var tid = setTimeout(playBell, 8000 + Math.random() * 4000);
+    bgmTimers.push(tid);
+  })();
 }
 
 // ===== 默认（门禁页、开头）—— 三层设计：五度drone + 潮汐呼吸扫频 + 泛音铃 =====
@@ -2796,8 +2850,9 @@ function startMission(key){
   state.puzzleSolved = false;
   state.puzzleFailed = false;
 
-  // 切换场景BGM
-  setBGMMode(key);
+  // 切换场景BGM（任务key → BGM模式映射）
+  var bgmMap = { winslow: 'london', shanghai: 'shanghai', underground: 'tokyo', rome_bath: 'rome' };
+  setBGMMode(bgmMap[key] || 'default');
 
   // 隐藏其他视图
   document.getElementById('mission-select').style.display = 'none';
