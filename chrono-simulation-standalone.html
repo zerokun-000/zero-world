@@ -146,6 +146,13 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(212,168,67,0.2) transparent;
 }
+
+/* 全局暗色滚动条 */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(90,130,170,0.25); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(90,130,170,0.4); }
+
 #intro-page .intro-text::-webkit-scrollbar { width: 4px; }
 #intro-page .intro-text::-webkit-scrollbar-track { background: transparent; }
 #intro-page .intro-text::-webkit-scrollbar-thumb { background: rgba(212,168,67,0.2); border-radius: 2px; }
