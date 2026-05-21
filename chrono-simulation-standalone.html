@@ -2459,7 +2459,7 @@ function setBGMMode(mode){
   _currentMode = mode;
 
   masterBGM = bgmCtx.createGain();
-  masterBGM.gain.value = 0.05;
+  masterBGM.gain.value = 0.09;
   masterBGM.connect(bgmCtx.destination);
   bgmNodes.push(masterBGM);
 
