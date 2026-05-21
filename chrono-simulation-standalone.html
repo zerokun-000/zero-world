@@ -2454,35 +2454,34 @@ function setBGMMode(mode){
   if(!bgmCtx){
     bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  // 等待 AudioContext 真正恢复后再启动 oscillator（移动端必须 await）
-  var resumePromise = (bgmCtx.state === 'suspended') ? bgmCtx.resume() : Promise.resolve();
-  resumePromise.then(function(){
-    if(_currentMode === mode) return; // 模式已切换，放弃旧的
-    bgmRunning = true;
-    _currentMode = mode;
+  // 移动端：直接 resume() 不等待，立刻创建节点。浏览器会在 context 就绪后自动播放。
+  if(bgmCtx.state === 'suspended'){
+    try { bgmCtx.resume(); } catch(e){}
+  }
+  bgmRunning = true;
+  _currentMode = mode;
 
-    masterBGM = bgmCtx.createGain();
-    masterBGM.gain.value = 0.09;
-    masterBGM.connect(bgmCtx.destination);
-    bgmNodes.push(masterBGM);
+  masterBGM = bgmCtx.createGain();
+  masterBGM.gain.value = 0.09;
+  masterBGM.connect(bgmCtx.destination);
+  bgmNodes.push(masterBGM);
 
-    switch(mode){
-      case 'london': startBGM_London(); break;
-      case 'shanghai': startBGM_Shanghai(); break;
-      case 'tokyo': startBGM_Tokyo(); break;
-      case 'rome': startBGM_Rome(); break;
-      case 'clock': startBGM_Clock(); break;
-      case 'zelo': startBGM_Zelo(); break;
-      case 'convergence': startBGM_Convergence(); break;
-      default: startBGM_Default(); break;
-    }
-  });
+  switch(mode){
+    case 'london': startBGM_London(); break;
+    case 'shanghai': startBGM_Shanghai(); break;
+    case 'tokyo': startBGM_Tokyo(); break;
+    case 'rome': startBGM_Rome(); break;
+    case 'clock': startBGM_Clock(); break;
+    case 'zelo': startBGM_Zelo(); break;
+    case 'convergence': startBGM_Convergence(); break;
+    default: startBGM_Default(); break;
+  }
 }
 
 // ===== 伦敦 · 舰队街（雾都、维多利亚、煤气灯）=====
 function startBGM_London(){
   // 低音弦乐 drone：cello 质感（sawtooth → LPF）
-  var cello = _osc('sawtooth', 65, 0.12);
+  var cello = _osc('sawtooth', 130, 0.08);
   var celloLPF = bgmCtx.createBiquadFilter();
   celloLPF.type = 'lowpass';
   celloLPF.frequency.value = 200;
@@ -2577,7 +2576,7 @@ function startBGM_Shanghai(){
 // ===== 新宿地下 · B-7（和风、工业、冷）=====
 function startBGM_Tokyo(){
   // 极低 sub drone
-  _osc('sine', 35, 0.15);
+  _osc('sine', 110, 0.12);
 
   // 尺八风：高音 sine + 慢弯音
   var hirajoshi = [523, 554, 698, 784, 932]; // C Db F G Bb
@@ -2614,8 +2613,8 @@ function startBGM_Tokyo(){
 // ===== 罗马 · 浴场（古调、暖回声、水滴）=====
 function startBGM_Rome(){
   // 温暖五度 drone
-  _osc('sine', 65, 0.1);
-  _osc('sine', 98, 0.05);
+  _osc('sine', 130, 0.08);
+  _osc('sine', 196, 0.04);
 
   // 里拉琴拨弦：Dorian 模式慢琶音
   var dorian = [293, 329, 349, 392, 440, 493, 523]; // D4 E4 F4 G4 A4 B4 C5
@@ -2647,8 +2646,8 @@ function startBGM_Rome(){
 
 // ===== Clock 对话（深空、悬置）=====
 function startBGM_Clock(){
-  _osc('sine', 55, 0.18);
-  _osc('sine', 110, 0.06);
+  _osc('sine', 110, 0.14);
+  _osc('sine', 220, 0.05);
 
   // 极慢呼吸扫频
   var breath = _osc('sine', 180, 0.04);
@@ -2674,7 +2673,7 @@ function startBGM_Clock(){
 
 // ===== Zelo 路线（地下逃离、紧张暗流）=====
 function startBGM_Zelo(){
-  _osc('sine', 40, 0.12);
+  _osc('sine', 110, 0.1);
   // 快速心跳节奏
   _scheduleLoop(900, function(now){
     var p = bgmCtx.createOscillator();
@@ -2690,15 +2689,15 @@ function startBGM_Zelo(){
 
 // ===== 汇聚结局 =====
 function startBGM_Convergence(){
-  _osc('sine', 50, 0.15);
-  _osc('sine', 75, 0.06);
-  _osc('sine', 100, 0.04);
+  _osc('sine', 110, 0.12);
+  _osc('sine', 165, 0.05);
+  _osc('sine', 220, 0.03);
 }
 
 // ===== 默认（门禁页、开头）=====
 function startBGM_Default(){
-  _osc('sine', 55, 0.15);
-  _osc('sine', 110, 0.06);
+  _osc('sine', 110, 0.12);
+  _osc('sine', 220, 0.05);
 }
 
 // ===== 任务选择界面 =====
