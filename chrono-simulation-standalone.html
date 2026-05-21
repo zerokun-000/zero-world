@@ -6,18 +6,18 @@
 <title>时空模拟 · 时序管理局招募测试</title>
 <style>
 :root{
-  --bg:#0a0a0a;
-  --panel:rgba(8,3,3,.97);
-  --text:#ddd;
-  --gold:#d4a843;
-  --gold-dim:#8b6914;
-  --gold-faint:#5a4020;
-  --red:#c03c3c;
-  --red-dim:#8b1a1a;
-  --blue:#4a80b0;
+  --bg:#080c12;
+  --panel:rgba(6,10,16,.97);
+  --text:#ccc;
+  --gold:#c8a850;
+  --gold-dim:#6a5828;
+  --gold-faint:#3a2a18;
+  --red:#5a80b0;
+  --red-dim:#3a5a80;
+  --blue:#6090c0;
   --green:#4a8a50;
-  --border:rgba(150,30,30,.4);
-  --circuit-color:rgba(192,60,60,.15);
+  --border:rgba(90,130,170,.25);
+  --circuit-color:rgba(90,130,170,.1);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -191,7 +191,7 @@ body {
   content: '';
   position: absolute; inset: 0;
   opacity: 0.2; z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg stroke='%23c03c3c' stroke-width='0.5' fill='none' opacity='0.3'%3E%3Cpath d='M0 15h15M30 0v15M45 0v10M60 15H45M15 30v15M30 45v15M0 30H15M45 30H60M30 60V45M15 45H0M30 15H45M45 45h15M15 60V45'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg stroke='%235a80b0' stroke-width='0.5' fill='none' opacity='0.25'%3E%3Cpath d='M0 15h15M30 0v15M45 0v10M60 15H45M15 30v15M30 45v15M0 30H15M45 30H60M30 60V45M15 45H0M30 15H45M45 45h15M15 60V45'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 60px 60px;
 }
 #gate > * { position: relative; z-index: 1; }
@@ -262,7 +262,7 @@ body {
 .topbar {
   position: fixed; top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--gold), var(--red-dim), var(--gold));
+  background: linear-gradient(90deg, rgba(200,168,80,.15), var(--gold-dim), rgba(200,168,80,.15));
   z-index: 100;
 }
 .topbar-text {
@@ -1184,8 +1184,8 @@ body[data-week="2"] #gate::before {
 }
 #escape-quiz-view .quiz-option.wrong {
   border-color: var(--red);
-  background: rgba(192,60,60,0.2);
-  color: #f88;
+  background: rgba(90,128,176,.2);
+  color: #8af;
 }
 #escape-quiz-view .quiz-option:disabled {
   cursor: default;
@@ -2329,77 +2329,94 @@ introBtn.addEventListener('click', function(){
   setTimeout(initBGM, 200);
 });
 
-// ===== BGM：打点计时器 + 摩斯电码暗示 =====
+// ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
 var bgmCtx = null;
 var bgmRunning = false;
-var bgmGain = null;
 
 function initBGM(){
   if(bgmRunning) return;
   try {
     if(!bgmCtx){
       bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(bgmCtx.state === 'suspended') bgmCtx.resume();
     }
-    // 确保 AudioContext 处于运行状态
     if(bgmCtx.state === 'suspended') bgmCtx.resume();
     bgmRunning = true;
 
-    // 主增益
-    bgmGain = bgmCtx.createGain();
-    bgmGain.gain.value = 0.08;
-    bgmGain.connect(bgmCtx.destination);
+    var masterGain = bgmCtx.createGain();
+    masterGain.gain.value = 0.06;
+    masterGain.connect(bgmCtx.destination);
 
-    // 低频嗡鸣（非常低，几乎听不到）
-    var drone = bgmCtx.createOscillator();
-    drone.type = 'sine';
-    drone.frequency.value = 55; // A1, very low
-    var droneGain = bgmCtx.createGain();
-    droneGain.gain.value = 0.03;
-    drone.connect(droneGain);
-    droneGain.connect(bgmCtx.destination);
-    drone.start();
+    // 第一层：深低频垫音（55Hz + 110Hz 五度叠）
+    var low = bgmCtx.createOscillator();
+    low.type = 'sine';
+    low.frequency.value = 55;
+    var lowGain = bgmCtx.createGain();
+    lowGain.gain.value = 0.25;
+    low.connect(lowGain);
+    lowGain.connect(masterGain);
 
-    // 摩斯电码：OSCILLATE（ --- ... -.-. .. .-.. .-.. .- - . ）
-    // 简化版：用节奏变化编一个重复暗示
-    var morsePattern = [
-      1,1,1, 0, 1,0,1,0, 0, 1,0,1, 0, 1,1,1, 0, 1,0,1,0, 0,
-      1,0,1, 0, 1,0,1,0, 0, 1,1,1, 0, 1,1,1, 0, 1,0,1,0, 0,
-      1,1,1, 0, 1,1,1, 0, 1,1,1, 0, 1,0,1,0, 0, 1,1,1, 0,
-      1,0,1, 0, 1,1,1, 0, 1,0,1,0, 0, 1,0,1,0, 0,
-      1,1,1, 0, 1,0,1, 0, 1,1,1, 0, 1,0,1, 0, 1,1,1, 0, 1,0,1, 0   // O-S-C-I-L-L-A-T-E
-    ];
-    var tickIndex = 0;
-    var tickRate = 0.8; // seconds between ticks
+    var fifth = bgmCtx.createOscillator();
+    fifth.type = 'sine';
+    fifth.frequency.value = 110;
+    var fifthGain = bgmCtx.createGain();
+    fifthGain.gain.value = 0.08;
+    fifth.connect(fifthGain);
+    fifthGain.connect(masterGain);
 
-    function playTick(){
-      var now = bgmCtx.currentTime;
-      // Short tick
-      var osc = bgmCtx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.value = 800;
-      var env = bgmCtx.createGain();
-      var vol = morsePattern[tickIndex % morsePattern.length] ? 0.6 : 0.12;
-      env.gain.setValueAtTime(vol * 0.08, now);
-      env.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-      osc.connect(env);
-      env.connect(bgmCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.06);
-      tickIndex++;
-    }
+    // 第二层：慢速潮汐滤波扫频（像呼吸）
+    var noiseSource = bgmCtx.createOscillator();
+    noiseSource.type = 'sine';
+    noiseSource.frequency.value = 180;
+    var noiseGain = bgmCtx.createGain();
+    noiseGain.gain.value = 0.06;
+    var filter = bgmCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 200;
+    filter.Q.value = 0.5;
+    noiseSource.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(masterGain);
 
-    function scheduleTick(){
+    // 潮汐LFO：filter频率在80~400Hz之间极慢摆动
+    var lfoFreq = 0.02; // ~50秒一个周期
+    function tidalSweep(){
       if(!bgmRunning) return;
-      playTick();
-      setTimeout(scheduleTick, tickRate * 1000);
+      var t = bgmCtx.currentTime;
+      filter.frequency.setValueAtTime(80 + 320 * (0.5 + 0.5 * Math.sin(t * lfoFreq * Math.PI * 2)), t);
+      setTimeout(tidalSweep, 2000);
     }
 
-    // 延迟一点开始，让玩家先进入游戏
-    setTimeout(scheduleTick, 3000);
+    // 第三层：极慢泛音铃（每5秒一次，轻微叮～）
+    var bellIndex = 0;
+    var bellNotes = [440, 550, 660, 495, 587, 440, 523, 440]; // A大调附近徘徊
+    function playBell(){
+      if(!bgmRunning) return;
+      var now = bgmCtx.currentTime;
+      var freq = bellNotes[bellIndex % bellNotes.length];
+      bellIndex++;
+
+      var osc = bgmCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      var env = bgmCtx.createGain();
+      env.gain.setValueAtTime(0.07, now);
+      env.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+      osc.connect(env);
+      env.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + 2.5);
+
+      setTimeout(playBell, 4500 + Math.random() * 1500); // 4.5~6秒随机间隔
+    }
+
+    // 启动所有层
+    low.start();
+    fifth.start();
+    noiseSource.start();
+    tidalSweep();
+    setTimeout(playBell, 4000);
 
   } catch(e){
-    // BGM fallback silent
     bgmRunning = false;
   }
 }
