@@ -2210,7 +2210,7 @@ function generateSpiral(rotationOffset){
 
   // 用setTransform替代scale，避免累积；clearRect替代canvas.width=重置
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, w);
+  ctx.clearRect(0, 0, w, _sh);
 
   var spacing = 7;
   var arcAngle = Math.PI * 1.7;
