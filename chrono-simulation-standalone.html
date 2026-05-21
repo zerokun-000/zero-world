@@ -65,9 +65,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   font-family: "Microsoft YaHei", sans-serif;
-  padding: 24px;
+  padding: 32px 24px 20px;
 }
 #intro-page::before {
   content: '';
@@ -77,26 +76,37 @@ body {
 }
 #intro-page > * { position: relative; z-index: 1; }
 #intro-page .intro-icon {
-  font-size: 48px;
-  margin-bottom: 24px;
+  font-size: 36px;
+  margin-bottom: 12px;
   opacity: 0.8;
 }
 #intro-page .intro-title {
   color: var(--gold);
   font-size: 20px;
   letter-spacing: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   text-shadow: 0 0 20px rgba(212,168,67,0.3);
 }
 #intro-page .intro-text {
   color: #999;
   font-size: 13px;
-  line-height: 2.2;
-  max-width: 480px;
-  text-align: center;
-  margin-bottom: 36px;
+  line-height: 2.0;
+  max-width: 680px;
+  width: 100%;
+  text-align: justify;
   white-space: pre-wrap;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 12px;
+  padding: 0 8px;
+  /* 滚动条美化 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212,168,67,0.2) transparent;
 }
+#intro-page .intro-text::-webkit-scrollbar { width: 4px; }
+#intro-page .intro-text::-webkit-scrollbar-track { background: transparent; }
+#intro-page .intro-text::-webkit-scrollbar-thumb { background: rgba(212,168,67,0.2); border-radius: 2px; }
 #intro-page .intro-btn {
   background: rgba(139,105,20,0.3);
   border: 1px solid var(--gold-dim);
@@ -108,6 +118,7 @@ body {
   font-family: inherit;
   letter-spacing: 3px;
   transition: all .3s;
+  flex-shrink: 0;
 }
 #intro-page .intro-btn:hover {
   background: var(--gold-dim);
@@ -117,9 +128,10 @@ body {
 #intro-page .intro-hint {
   color: var(--gold-faint);
   font-size: 11px;
-  margin-top: 32px;
+  margin-top: 12px;
   letter-spacing: 2px;
   opacity: 0.5;
+  flex-shrink: 0;
 }
 
 /* ===== 登录界面 ===== */
