@@ -2694,10 +2694,61 @@ function startBGM_Convergence(){
   _osc('sine', 220, 0.03);
 }
 
-// ===== 默认（门禁页、开头）=====
+// ===== 默认（门禁页、开头）—— 三层设计：五度drone + 潮汐呼吸扫频 + 泛音铃 =====
 function startBGM_Default(){
-  _osc('sine', 110, 0.12);
-  _osc('sine', 220, 0.05);
+  // 第一层：110Hz + 220Hz 五度叠垫音
+  var low = bgmCtx.createOscillator();
+  low.type = 'sine'; low.frequency.value = 110;
+  var lowGain = bgmCtx.createGain(); lowGain.gain.value = 0.15;
+  low.connect(lowGain); lowGain.connect(masterBGM);
+  low.start();
+  bgmNodes.push(low, lowGain);
+
+  var fifth = bgmCtx.createOscillator();
+  fifth.type = 'sine'; fifth.frequency.value = 220;
+  var fifthGain = bgmCtx.createGain(); fifthGain.gain.value = 0.05;
+  fifth.connect(fifthGain); fifthGain.connect(masterBGM);
+  fifth.start();
+  bgmNodes.push(fifth, fifthGain);
+
+  // 第二层：潮汐滤波扫频（像深空站的呼吸）
+  var breath = bgmCtx.createOscillator();
+  breath.type = 'sine'; breath.frequency.value = 360;
+  var breathFilter = bgmCtx.createBiquadFilter();
+  breathFilter.type = 'lowpass'; breathFilter.frequency.value = 400; breathFilter.Q.value = 0.5;
+  breath.connect(breathFilter);
+  var breathGain = bgmCtx.createGain(); breathGain.gain.value = 0.04;
+  breathFilter.connect(breathGain); breathGain.connect(masterBGM);
+  breath.start();
+  bgmNodes.push(breath, breathFilter, breathGain);
+
+  (function tidalSweep(){
+    if(!bgmRunning || _currentMode !== 'default') return;
+    var t = bgmCtx.currentTime;
+    breathFilter.frequency.setValueAtTime(150 + 650 * (0.5 + 0.5 * Math.sin(t * 0.02 * Math.PI * 2)), t);
+    var tid = setTimeout(tidalSweep, 2000);
+    bgmTimers.push(tid);
+  })();
+
+  // 第三层：泛音铃（A大调附近徘徊，每4.5~6秒轻轻一叮）
+  var bellNotes = [440, 550, 660, 495, 587, 440, 523, 440];
+  var bellIndex = 0;
+  (function playBell(){
+    if(!bgmRunning || _currentMode !== 'default') return;
+    var now = bgmCtx.currentTime;
+    var freq = bellNotes[bellIndex % bellNotes.length];
+    bellIndex++;
+    var o = bgmCtx.createOscillator();
+    o.type = 'sine'; o.frequency.value = freq;
+    var env = bgmCtx.createGain();
+    env.gain.setValueAtTime(0.05, now);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+    o.connect(env); env.connect(masterBGM);
+    o.start(now); o.stop(now + 2.5);
+    bgmNodes.push(o, env);
+    var tid = setTimeout(playBell, 4500 + Math.random() * 1500);
+    bgmTimers.push(tid);
+  })();
 }
 
 // ===== 任务选择界面 =====
