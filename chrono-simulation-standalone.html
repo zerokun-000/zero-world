@@ -894,6 +894,43 @@ body[data-week="2"] #gate::before {
   0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(212,168,67,0.4); }
   50% { opacity: 0.3; box-shadow: 0 0 0 rgba(212,168,67,0); }
 }
+
+/* 回顾故事按钮 */
+.review-story-btn {
+  margin-top: 20px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-faint);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .3s;
+  letter-spacing: 2px;
+  align-self: center;
+}
+.review-story-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+#review-back-btn {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 8px 24px;
+  background: var(--panel);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-size: 13px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: all .3s;
+}
+#review-back-btn:hover {
+  border-color: var(--gold);
+  background: rgba(200,168,80,.1);
+}
 @media (max-width: 600px) {
   #puzzle-view { padding: 20px; }
   #puzzle-view .puzzle-question { font-size: 15px; }
@@ -1365,6 +1402,7 @@ body[data-week="2"] #gate::before {
     <button class="puzzle-btn" id="puzzle-submit-btn">确认</button>
   </div>
   <div class="puzzle-err" id="puzzle-err"></div>
+  <button class="review-story-btn" id="puzzle-review-btn">回顾故事</button>
 </div>
 </div><!-- /main -->
 
@@ -1381,6 +1419,7 @@ body[data-week="2"] #gate::before {
   <div class="quiz-sub">深层权限验证 · 身份确认</div>
   <div class="quiz-progress" id="quiz-progress"></div>
   <div id="quiz-content"></div>
+  <button class="review-story-btn" id="escape-review-btn">回顾故事</button>
 </div>
 
 <!-- 页脚 -->
@@ -2729,6 +2768,58 @@ function processText(text){
 }
 
 // ===== 推理谜题（3次机会 + 渐进提示 + 理解偏差后果）=====
+// ===== 回顾故事（答题时切回叙事翻阅线索）=====
+var reviewSave = null; // {quizType: 'puzzle'|'escape', quizEl, narrativeEl}
+
+function enterReviewMode(quizType){
+  // 记录是哪个答题界面
+  var quizEl = quizType === 'puzzle'
+    ? document.getElementById('puzzle-view')
+    : document.getElementById('escape-quiz-view');
+  reviewSave = {quizType: quizType, quizEl: quizEl};
+
+  // 隐藏答题，显示故事
+  quizEl.style.display = 'none';
+  var nv = document.getElementById('narrative-view');
+  nv.style.display = 'block';
+  nv.scrollTop = 0;
+
+  // 隐藏选择按钮（只是回顾，不需要点）
+  var choices = document.getElementById('choices');
+  if(choices) choices.style.display = 'none';
+
+  // 隐藏header里的"返回"按钮（避免跳走）
+  var header = document.getElementById('narrative-header');
+  if(header) header.style.display = 'none';
+
+  // 加浮动"返回答题"按钮
+  var btn = document.createElement('button');
+  btn.id = 'review-back-btn';
+  btn.textContent = '← 返回答题';
+  btn.addEventListener('click', exitReviewMode);
+  document.body.appendChild(btn);
+}
+
+function exitReviewMode(){
+  // 移除浮动按钮
+  var btn = document.getElementById('review-back-btn');
+  if(btn) btn.remove();
+
+  // 恢复故事界面原状
+  var nv = document.getElementById('narrative-view');
+  nv.style.display = 'none';
+  var choices = document.getElementById('choices');
+  if(choices) choices.style.display = '';
+  var header = document.getElementById('narrative-header');
+  if(header) header.style.display = '';
+
+  // 回到答题
+  if(reviewSave && reviewSave.quizEl){
+    reviewSave.quizEl.style.display = 'flex';
+  }
+  reviewSave = null;
+}
+
 function showPuzzle(puzzleData){
   document.getElementById('narrative-view').style.display = 'none';
   document.getElementById('ending-view').style.display = 'none';
@@ -2754,6 +2845,10 @@ function showPuzzle(puzzleData){
   });
 
   var attempts = 0;
+
+  // 回顾故事按钮
+  var reviewBtn = document.getElementById('puzzle-review-btn');
+  reviewBtn.onclick = function(){ enterReviewMode('puzzle'); };
 
   inputEl.focus();
 
@@ -2904,6 +2999,11 @@ function showEscapeQuiz(){
 
   var qv = document.getElementById('escape-quiz-view');
   qv.style.display = 'flex';
+
+  // 回顾故事按钮
+  var reviewBtn = document.getElementById('escape-review-btn');
+  reviewBtn.onclick = function(){ enterReviewMode('escape'); };
+
   renderQuizQuestion();
 }
 
@@ -2995,12 +3095,14 @@ function handleQuizAnswer(correct, btn){
     if(quizState.passed){
       nextBtn.textContent = '进 入 深 层 模 式';
       nextBtn.addEventListener('click', function(){
+        var rb = document.getElementById('review-back-btn'); if(rb) rb.remove();
         document.getElementById('escape-quiz-view').style.display = 'none';
         showWeek2Transition();
       });
     } else {
       nextBtn.textContent = '返 回';
       nextBtn.addEventListener('click', function(){
+        var rb = document.getElementById('review-back-btn'); if(rb) rb.remove();
         document.getElementById('escape-quiz-view').style.display = 'none';
         // 恢复汇聚结局页面
         document.getElementById('ending-view').style.display = '';
@@ -3018,6 +3120,15 @@ function getMissionSub(key){
 
 // ===== 显示结局（线性链）=====
 function showEnding(){
+  // 清理回顾模式
+  var rb = document.getElementById('review-back-btn');
+  if(rb) rb.remove();
+  var nh = document.getElementById('narrative-header');
+  if(nh) nh.style.display = '';
+  var ch = document.getElementById('choices');
+  if(ch) ch.style.display = '';
+  reviewSave = null;
+
   document.getElementById('narrative-view').style.display = 'none';
   var ev = document.getElementById('ending-view');
   ev.style.display = 'flex';
