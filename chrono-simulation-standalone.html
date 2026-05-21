@@ -2455,25 +2455,29 @@ function setBGMMode(mode){
   if(!bgmCtx){
     bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if(bgmCtx.state === 'suspended') bgmCtx.resume();
-  bgmRunning = true;
-  _currentMode = mode;
+  // 等待 AudioContext 真正恢复后再启动 oscillator（移动端必须 await）
+  var resumePromise = (bgmCtx.state === 'suspended') ? bgmCtx.resume() : Promise.resolve();
+  resumePromise.then(function(){
+    if(_currentMode === mode) return; // 模式已切换，放弃旧的
+    bgmRunning = true;
+    _currentMode = mode;
 
-  masterBGM = bgmCtx.createGain();
-  masterBGM.gain.value = 0.09;
-  masterBGM.connect(bgmCtx.destination);
-  bgmNodes.push(masterBGM);
+    masterBGM = bgmCtx.createGain();
+    masterBGM.gain.value = 0.09;
+    masterBGM.connect(bgmCtx.destination);
+    bgmNodes.push(masterBGM);
 
-  switch(mode){
-    case 'london': startBGM_London(); break;
-    case 'shanghai': startBGM_Shanghai(); break;
-    case 'tokyo': startBGM_Tokyo(); break;
-    case 'rome': startBGM_Rome(); break;
-    case 'clock': startBGM_Clock(); break;
-    case 'zelo': startBGM_Zelo(); break;
-    case 'convergence': startBGM_Convergence(); break;
-    default: startBGM_Default(); break;
-  }
+    switch(mode){
+      case 'london': startBGM_London(); break;
+      case 'shanghai': startBGM_Shanghai(); break;
+      case 'tokyo': startBGM_Tokyo(); break;
+      case 'rome': startBGM_Rome(); break;
+      case 'clock': startBGM_Clock(); break;
+      case 'zelo': startBGM_Zelo(); break;
+      case 'convergence': startBGM_Convergence(); break;
+      default: startBGM_Default(); break;
+    }
+  });
 }
 
 // ===== 伦敦 · 舰队街（雾都、维多利亚、煤气灯）=====
