@@ -2182,37 +2182,36 @@ var spiralAngle = 0;
 var spiralSpeed = 0.0006;     // 基础速度（≈90s一圈）
 var spiralOpacity = 0.35;
 var spiralAnimId = null;
+// 缓存画布尺寸，避免每帧getBoundingClientRect + 重置canvas触发回流
+var _sw = 0, _sh = 0, _sdpr = 1, _scx = 0, _scy = 0, _smaxR = 0;
 
-function generateSpiral(rotationOffset){
+function spiralResize(){
   var canvas = document.getElementById('spiral-canvas');
   if(!canvas) return;
   var dpr = window.devicePixelRatio || 1;
   var rect = canvas.getBoundingClientRect();
-  var w = rect.width;
-  var h = rect.height;
+  var w = rect.width, h = rect.height;
   if(w < 10 || h < 10) return;
-
+  if(w === _sw && h === _sh && dpr === _sdpr) return; // 没变，跳过
+  _sw = w; _sh = h; _sdpr = dpr;
   canvas.width = Math.round(w * dpr);
   canvas.height = Math.round(h * dpr);
+  _scx = w / 2; _scy = h / 2;
+  _smaxR = Math.sqrt(_scx*_scx + _scy*_scy) + 100;
+}
 
-  var ctx;
-  try {
-    ctx = canvas.getContext('2d');
-  } catch(e) { return; }
+function generateSpiral(rotationOffset){
+  spiralResize();
+  var canvas = document.getElementById('spiral-canvas');
+  if(!canvas || _sw < 10) return;
+  var ctx = canvas.getContext('2d');
   if(!ctx) return;
+  var w = _sw, cx = _scx, cy = _scy, maxR = _smaxR, dpr = _sdpr;
 
-  try {
-    ctx.scale(dpr, dpr);
-  } catch(e) { /* 移动端某些浏览器可能不支持scale */ }
+  // 用setTransform替代scale，避免累积；clearRect替代canvas.width=重置
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, w);
 
-  var cx = w / 2;
-  var cy = h / 2;
-  var maxR = Math.sqrt(cx*cx + cy*cy) + 100;
-
-  // 透明背景
-  ctx.clearRect(0, 0, w, h);
-
-  // 螺旋参数
   var spacing = 7;
   var arcAngle = Math.PI * 1.7;
   var rotationStep = 0.12;
@@ -2221,10 +2220,8 @@ function generateSpiral(rotationOffset){
   ctx.strokeStyle = 'rgba(212, 168, 67, ' + spiralOpacity + ')';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-
   for(var r = 12; r < maxR; r += spacing){
-    var rot = r * rotationStep + offset;
-    ctx.arc(cx, cy, r, rot, rot + arcAngle);
+    ctx.arc(cx, cy, r, r * rotationStep + offset, r * rotationStep + offset + arcAngle);
   }
   ctx.stroke();
 
@@ -2233,8 +2230,7 @@ function generateSpiral(rotationOffset){
   ctx.lineWidth = 0.8;
   ctx.beginPath();
   for(var r2 = 16; r2 < maxR; r2 += spacing * 1.5){
-    var rot2 = r2 * 0.08 + Math.PI + offset;
-    ctx.arc(cx, cy, r2, rot2, rot2 + arcAngle * 0.7);
+    ctx.arc(cx, cy, r2, r2 * 0.08 + Math.PI + offset, r2 * 0.08 + Math.PI + offset + arcAngle * 0.7);
   }
   ctx.stroke();
 }
@@ -2247,13 +2243,17 @@ function spiralFrame(){
 
 // 初始化螺旋 + 窗口大小变化时重新生成
 function initSpiral(){
-  if(spiralAnimId) return; // 已启动
+  if(spiralAnimId) return;
+  spiralResize();
   generateSpiral(spiralAngle);
   spiralAnimId = requestAnimationFrame(spiralFrame);
   var resizeTimer;
   window.addEventListener('resize', function(){
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function(){ generateSpiral(spiralAngle); }, 200);
+    resizeTimer = setTimeout(function(){
+      spiralResize();
+      generateSpiral(spiralAngle);
+    }, 200);
   });
 }
 
