@@ -937,6 +937,13 @@ body[data-week="2"] #gate::before {
   #puzzle-view input { width: 180px; font-size: 14px; padding: 14px 12px; }
   #puzzle-view .puzzle-btn { padding: 14px 24px; }
   #puzzle-view .puzzle-input-wrap { flex-direction: column; gap: 12px; }
+  .review-story-btn { min-height: 44px; padding: 10px 24px; font-size: 13px; }
+  #review-back-btn {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 20px;
+    font-size: 14px;
+    min-width: 140px;
+  }
 }
 
 /* ===== 线索档案界面 ===== */
@@ -1110,7 +1117,7 @@ body[data-week="2"] #gate::before {
   z-index: 150;
   display: none;
   flex-direction: column;
-  background: rgba(8,3,3,0.98);
+  background: rgba(6,10,16,0.98);
   padding: 40px 32px;
   overflow-y: auto;
 }
@@ -1158,7 +1165,7 @@ body[data-week="2"] #gate::before {
   z-index: 180;
   display: none;
   flex-direction: column;
-  background: rgba(8,3,3,0.98);
+  background: rgba(6,10,16,0.98);
   padding: 48px 32px;
   overflow-y: auto;
 }
@@ -1290,6 +1297,7 @@ body[data-week="2"] #gate::before {
   #escape-quiz-view { padding: 32px 16px; }
   #escape-quiz-view .quiz-question { font-size: 13px; padding: 14px 16px; }
   #escape-quiz-view .quiz-option { font-size: 12px; padding: 10px 16px; }
+  #escape-quiz-view .review-story-btn { margin-top: 16px; }
 }
 
 /* ===== 催眠文字脉冲动画 ===== */
@@ -3204,7 +3212,7 @@ function showConvergenceEnding(){
   hypnoLayer.style.cssText =
     'position:absolute;top:0;left:0;right:0;bottom:0;z-index:100;' +
     'display:flex;align-items:center;justify-content:center;' +
-    'background:rgba(8,3,3,0.95);';
+    'background:rgba(6,10,16,0.95);';
   main.appendChild(hypnoLayer);
 
   // 催眠序列（诱导型：从身体锚点 → 旅程回溯 → 行为确认 → 归属 → 服从 → 身份接受）
