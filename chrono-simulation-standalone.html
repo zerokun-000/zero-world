@@ -795,6 +795,34 @@ body[data-week="2"] #gate::before {
   #choices { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 }
 
+/* ===== 倒计时 ===== */
+#countdown-overlay {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 1000;
+  font-size: 48px;
+  font-weight: 300;
+  color: var(--gold);
+  opacity: 0.6;
+  transition: color .5s, opacity .5s;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 20px rgba(200,168,80,.3);
+}
+#countdown-overlay.urgent {
+  color: var(--red);
+  opacity: 0.9;
+  animation: cd-pulse .8s ease-in-out infinite;
+}
+@keyframes cd-pulse {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.08); }
+}
+@media (max-width: 600px) {
+  #countdown-overlay { font-size: 36px; top: 12px; right: 16px; }
+}
+
 /* ===== 解谜界面 ===== */
 #puzzle-view {
   position: fixed; inset: 0;
@@ -2835,6 +2863,47 @@ function exitReviewMode(){
   reviewSave = null;
 }
 
+// ===== 倒计时系统 =====
+var countdownTimer = null;
+var countdownSeconds = 0;
+
+function startCountdown(seconds, onTimeout){
+  clearCountdown();
+  countdownSeconds = seconds;
+
+  // 创建倒计时浮层
+  var cd = document.getElementById('countdown-overlay');
+  if(!cd){
+    cd = document.createElement('div');
+    cd.id = 'countdown-overlay';
+    document.body.appendChild(cd);
+  }
+  cd.textContent = seconds;
+  cd.className = '';
+
+  function tick(){
+    countdownSeconds--;
+    if(countdownSeconds <= 0){
+      cd.textContent = '0';
+      cd.className = '';
+      clearCountdown();
+      if(onTimeout) onTimeout();
+      return;
+    }
+    cd.textContent = countdownSeconds;
+    if(countdownSeconds <= 10) cd.className = 'urgent';
+    countdownTimer = setTimeout(tick, 1000);
+  }
+  countdownTimer = setTimeout(tick, 1000);
+}
+
+function clearCountdown(){
+  if(countdownTimer){ clearTimeout(countdownTimer); countdownTimer = null; }
+  var cd = document.getElementById('countdown-overlay');
+  if(cd) cd.remove();
+  countdownSeconds = 0;
+}
+
 function showPuzzle(puzzleData){
   document.getElementById('narrative-view').style.display = 'none';
   document.getElementById('ending-view').style.display = 'none';
@@ -3614,6 +3683,11 @@ function renderClockDialogue(){
   body.appendChild(textDiv);
   nv.appendChild(body);
 
+  // Clock三选一：启动30秒倒计时
+  if(step.id === 'three_choices'){
+    startCountdown(30, showClockTimeoutEnding);
+  }
+
   // 选择按钮
   var choicesDiv = document.createElement('div');
   choicesDiv.id = 'choices';
@@ -3622,6 +3696,7 @@ function renderClockDialogue(){
     btn.className = 'choice-btn';
     btn.textContent = c.text;
     btn.addEventListener('click', function(){
+      clearCountdown(); // 做出选择，停止倒计时
       // 根据 nextStepId 跳转（支持分岔对话），否则 +1
       if(c.nextStepId){
         for(var si = 0; si < dialogueSteps.length; si++){
@@ -3672,10 +3747,12 @@ function renderClockDialogue(){
 }
 
 function endClockPath(){
+  clearCountdown();
   // 接受Clock或对话结束后，进入管理局结局
   showFinalEnding('bureau');
 }
 function endClockPathZelo(){
+  clearCountdown();
   showZeloRescue();
 }
 
@@ -3757,7 +3834,7 @@ function renderZeloScene(){
             '"我知道你会来。\"他看着你。\"我就是……不知道你什么时候会到。所以我一直在等。"\n\n' +
             '"我说了会来找你。\"——你听到自己的声音比想象中稳。\n\n' +
             '破球从门缝飘了进来。光带闪了一下。\n\n' +
-            '"{{gold|三分钟。我给你们两条路。}}\n\n' +
+            '"{{gold|一分钟。我给你们两条路。}}\n\n' +
             '"{{gold|第一条——干净的。全新的身份线。离开这一切。门外那个人会带你们出去。}}\n\n' +
             '"{{gold|第二条——不干净的。我会告诉你们零号计划剩下的事。但你得知道——往下走的路没有回头。}}\n\n' +
             '你朋友看了你一眼。他什么都没问。\n\n' +
@@ -3780,6 +3857,11 @@ function renderZeloScene(){
   body.appendChild(textDiv);
   nv.appendChild(body);
 
+  // Zelo两条路（B-19场景）：启动60秒倒计时
+  if(zeloStep === 1){
+    startCountdown(60, showZeloTimeoutEnding);
+  }
+
   var choicesDiv = document.createElement('div');
   choicesDiv.id = 'choices';
   scene.choices.forEach(function(c){
@@ -3787,6 +3869,7 @@ function renderZeloScene(){
     btn.className = 'choice-btn';
     btn.textContent = c.text;
     btn.addEventListener('click', function(){
+      clearCountdown(); // 做出选择，停止倒计时
       zeloChoice = c.tag;  // 记录终幕分支
       zeloStep++;
       renderZeloScene();
@@ -3879,6 +3962,67 @@ function showZeloFinale(){
   }
   // 重新处理 processText（替换{{gold}}等标签）
   textEl.innerHTML = processText(textEl.textContent);
+}
+
+// ===== Zelo超时结局：门关了 =====
+function showZeloTimeoutEnding(){
+  var nv = document.getElementById('narrative-view');
+  nv.innerHTML = '';
+  nv.style.display = 'flex';
+  nv.style.flexDirection = 'column';
+  nv.style.justifyContent = 'flex-start';
+  nv.style.padding = '40px 32px 120px';
+  nv.style.overflow = 'auto';
+
+  var header = document.createElement('div');
+  header.id = 'narrative-header';
+  header.innerHTML =
+    '<span class="chapter-title" style="color:var(--gold);">◆ 门 关 了</span>' +
+    '<span class="mission-tag">超时 · 第四结局</span>';
+  nv.appendChild(header);
+
+  var body = document.createElement('div');
+  body.id = 'narrative-body';
+  var textDiv = document.createElement('div');
+  body.className = 'text';
+  textDiv.innerHTML = processText(
+    '破球的光带闪了一下——不是因为等得不耐烦。是因为有东西在接近。\n\n' +
+    '"{{gold|他们有发现了。}}"\n\n' +
+    '泽罗没有回答。他看了你一眼——不是失望。他从头到尾没有期待你怎么选。他只是确认：你不选了。\n\n' +
+    '他用手杖敲了一下地面。通道深处传来液压的声音。\n\n' +
+    '"{{gold|门要关了。}}"\n\n' +
+    '"我知道。"\n\n' +
+    '你没有选任何一条路。\n\n' +
+    '破球飘到你面前。光带停在红色——不是威胁。是最后一次。\n\n' +
+    '"{{gold|你有一分钟。你用它来想。你没有选。}}"\n\n' +
+    '身后的暗门打开了——管理局的白光从缝隙里漏进来。冷得扎眼。走廊另一头，B-19的门在缓慢合上。你朋友站在门框里。他的脸被逐渐变窄的门缝切成一条竖线。\n\n' +
+    '他没有说话。他只是在看你。\n\n' +
+    '{{po|门合上了。}}\n\n' +
+    '泽罗沿着通道往下走去。手杖的声音越来越远。破球跟在后面，光带熄灭。\n\n' +
+    '你一个人站在走廊中间。身后是管理局——你回不去了。前方是B-19——门已经封死。\n\n' +
+    '两边你都进不去了。不是因为有人拦你——是因为你错过了时间。\n\n' +
+    '空气里有纸和金属的味道。和第一天晚上一样。但这一次——没有头显。没有字条。没有人给你密码。\n\n' +
+    '————\n\n' +
+    '{{gold|有一分钟。你想了太久。}}'
+  );
+  body.appendChild(textDiv);
+  nv.appendChild(body);
+
+  var btn = document.createElement('button');
+  btn.textContent = '重 新 开 始';
+  btn.style.cssText =
+    'margin:36px auto;' +
+    'background:rgba(139,105,20,.2);' +
+    'border:1px solid var(--gold-dim);' +
+    'color:var(--gold-dim);' +
+    'padding:12px 40px;' +
+    'border-radius:4px;' +
+    'cursor:pointer;' +
+    'font-size:13px;' +
+    'font-family:inherit;' +
+    'letter-spacing:2px;';
+  btn.addEventListener('click', function(){ location.reload(); });
+  nv.appendChild(btn);
 }
 
 // ===== Clock强制改造（反抗分支）=====
@@ -4040,6 +4184,63 @@ function showClockEnding(){
     '  letter-spacing:2px;">重 新 开 始</button>';
 
   main.appendChild(ev);
+}
+
+// ===== Clock超时结局：沉默的回答 =====
+function showClockTimeoutEnding(){
+  var nv = document.getElementById('narrative-view');
+  nv.innerHTML = '';
+  nv.style.display = 'flex';
+  nv.style.flexDirection = 'column';
+  nv.style.justifyContent = 'flex-start';
+  nv.style.padding = '40px 32px 120px';
+  nv.style.overflow = 'auto';
+
+  var header = document.createElement('div');
+  header.id = 'narrative-header';
+  header.innerHTML =
+    '<span class="chapter-title" style="color:var(--red-dim);">◆ 沉 默 的 回 答</span>' +
+    '<span class="mission-tag">超时 · 第四结局</span>';
+  nv.appendChild(header);
+
+  var body = document.createElement('div');
+  body.id = 'narrative-body';
+  var textDiv = document.createElement('div');
+  body.className = 'text';
+  textDiv.innerHTML = processText(
+    '怀表的滴答声停了。\n\n' +
+    '第一次——它停了。\n\n' +
+    'Clock低头看了一眼表盘，然后看你。他的表情没有变化。但你把他的沉默理解为了一件事——\n\n' +
+    '{{po|归档。}}\n\n' +
+    '"{{red|沉默也是一种回答。}}"\n\n' +
+    '他站起来。把怀表翻过来——表盘朝下。他走到门口，手放在门把上，停了一下。\n\n' +
+    '"{{red|你没有选择任何一条路。所以时间替你选了——它把你留在这里。}}"\n\n' +
+    '门在他身后关上。某种机械装置锁死的声音——不是钥匙。是更深的什么东西。\n\n' +
+    '房间开始褪色。不是变暗——是变得不重要。墙、桌子、椅子——它们还在那里，但你感觉不到它们的存在。你低头看自己的手——还在。但你碰不到任何东西。\n\n' +
+    '{{po|你被从时间的流动中移除了。不是死了——是悬置。永远在这个做出选择前的瞬间。但选择本身被永久撤回了。}}\n\n' +
+    '怀表的滴答声从某个很远的地方传来。你分辨不出方向。也许下一声——\n\n' +
+    '不会来了。\n\n' +
+    '————\n\n' +
+    '{{gold|有三种结果。你选了第四种。}}'
+  );
+  body.appendChild(textDiv);
+  nv.appendChild(body);
+
+  var btn = document.createElement('button');
+  btn.textContent = '重 新 开 始';
+  btn.style.cssText =
+    'margin:36px auto;' +
+    'background:rgba(90,60,60,.25);' +
+    'border:1px solid var(--red-dim);' +
+    'color:var(--red-dim);' +
+    'padding:12px 40px;' +
+    'border-radius:4px;' +
+    'cursor:pointer;' +
+    'font-size:13px;' +
+    'font-family:inherit;' +
+    'letter-spacing:2px;';
+  btn.addEventListener('click', function(){ location.reload(); });
+  nv.appendChild(btn);
 }
 
 // ===== Clock放过你：记忆清除 + 时间倒流器 =====
