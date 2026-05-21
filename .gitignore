@@ -1,0 +1,23 @@
+# .gitignore for Claw project
+.env
+*.env
+node_modules/
+*.log
+*.tmp
+session/
+*.bak
+backup/
+.workbuddy/
+cloudflared.exe
+cloudflared.exe.backup.*
+cpolar*
+*.wav
+*.mp3
+generated-images/
+members.json
+post_result*.txt
+poller_state.json
+_concat.txt
+nul
+.DS_Store
+Thumbs.db

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时空模拟 · 通关攻略</title>
+<style>
+  :root {
+    --bg: #1a1612; --card: #231e19; --card2: #2d2720;
+    --fg: #e8e0d4; --muted: #9a8b7a; --subtle: #6a5c4c;
+    --gold: #d4a843; --red: #c75050; --green: #5a9a6a; --blue: #5a80b0;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --good-bg: rgba(90,154,106,0.12); --bad-bg: rgba(199,80,80,0.12);
+    --hidden-bg: rgba(212,168,67,0.12);
+    --good-c: #5a9a6a; --bad-c: #c75050; --hidden-c: #d4a843;
+    --radius: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Noto Sans SC",sans-serif; background:var(--bg); color:var(--fg); line-height:1.7; padding:24px 16px; max-width:900px; margin:0 auto; }
+  h1 { font-size:22px; font-weight:600; text-align:center; color:var(--gold); margin-bottom:4px; letter-spacing:3px; }
+  .subtitle { text-align:center; color:var(--muted); font-size:13px; margin-bottom:32px; }
+  .story-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); margin-bottom:20px; overflow:hidden; }
+  .story-header { padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border); }
+  .story-icon { font-size:28px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; background:var(--card2); border-radius:10px; flex-shrink:0; }
+  .story-title { font-size:16px; font-weight:600; }
+  .story-sub { font-size:12px; color:var(--muted); }
+  .story-body { padding:16px 20px; }
+  .chapter { margin-bottom:14px; }
+  .ch-label { font-size:11px; color:var(--gold); font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+  .choices { display:flex; flex-wrap:wrap; gap:8px; }
+  .choice-tag {
+    padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all .15s;
+    background:var(--card2); border:1px solid var(--border); color:var(--muted);
+  }
+  .choice-tag:hover { border-color:var(--border2); color:var(--fg); }
+  .choice-tag.selected { border-color:var(--gold); color:var(--gold); background:rgba(212,168,67,0.08); }
+  .choice-tag .ct-text { font-weight:500; }
+  .choice-tag .ct-tag { font-size:10px; color:var(--subtle); margin-left:4px; opacity:.7; }
+  .branch-note { font-size:11px; color:var(--subtle); margin-top:4px; font-style:italic; }
+
+  .ending-section { margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+  .ending-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; margin-bottom:8px; }
+  .ending-badge { font-size:18px; width:30px;text-align:center;flex-shrink:0; }
+  .ending-info { flex:1; }
+  .ending-name { font-size:13px; font-weight:600; }
+  .ending-desc { font-size:11px; color:var(--muted); margin-top:1px; }
+  .ending-good { background:var(--good-bg); border-left:3px solid var(--good-c); }
+  .ending-good .ending-name { color:var(--good-c); }
+  .ending-bad { background:var(--bad-bg); border-left:3px solid var(--bad-c); }
+  .ending-bad .ending-name { color:var(--bad-c); }
+  .ending-hidden { background:var(--hidden-bg); border-left:3px solid var(--hidden-c); }
+  .ending-hidden .ending-name { color:var(--hidden-c); }
+
+  .path-tree { font-size:12px; color:var(--muted); margin:8px 0; padding:8px 12px; background:rgba(0,0,0,.2); border-radius:6px; }
+  .path-tree code { background:var(--card2); padding:1px 6px; border-radius:3px; font-size:11px; color:var(--gold); }
+  .path-arrow { color:var(--subtle); margin:0 4px; }
+
+  .legend { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:24px; font-size:12px; }
+  .legend-item { display:flex; align-items:center; gap:5px; color:var(--muted); }
+  .legend-dot { width:10px;height:10px;border-radius:3px; }
+
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-bottom:24px; }
+  .summary-box { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:14px; text-align:center; }
+  .summary-box .sb-icon { font-size:24px; margin-bottom:6px; }
+  .summary-box .sb-title { font-size:13px; font-weight:600; margin-bottom:2px; }
+  .summary-box .sb-count { font-size:11px; color:var(--muted); }
+
+  .footer { text-align:center; color:var(--subtle); font-size:11px; margin-top:32px; padding-top:16px; border-top:1px solid var(--border); }
+
+  @media(max-width:600px) {
+    body { padding:12px 10px; }
+    .story-header { padding:12px 14px; }
+    .story-body { padding:12px 14px; }
+    .choice-tag { padding:4px 10px; font-size:11px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>时空模拟 · 完全攻略</h1>
+<p class="subtitle">4个故事 / 每章选择 / 三结局判定体系</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--good-c)"></div>好结局</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--bad-c)"></div>坏结局</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--hidden-c)"></div>隐藏结局</div>
+</div>
+
+<!-- ==================== 舰队街 ==================== -->
+<div class="story-card">
+  <div class="story-header">
+    <div class="story-icon">&#127963;</div>
+    <div><div class="story-title">舰队街14号 · Winslow</div><div class="story-sub">伦敦 · 1899年 · 5章 · 黄铜地球仪</div></div>
+  </div>
+  <div class="story-body">
+
+    <div class="chapter">
+      <div class="ch-label">第一章 → 第二章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">仔细研究任务卡</span><span class="ct-tag">仔细研究</span></div>
+        <div class="choice-tag"><span class="ct-text">直接前往目标时代</span><span class="ct-tag">直奔目标</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第二章 → 第三章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">潜入书房接触地球仪</span><span class="ct-tag">潜入书房</span></div>
+        <div class="choice-tag"><span class="ct-text">暗处观察温斯洛</span><span class="ct-tag">暗处观察</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第三章 → 第四章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">坦白告诉温斯洛真相</span><span class="ct-tag">坦白真相</span></div>
+        <div class="choice-tag"><span class="ct-text">观察异瞳者</span><span class="ct-tag">观察异瞳者</span></div>
+      </div>
+      <div class="branch-note">选「观察异瞳者」会触发分支：追到死胡同后面临不同选项</div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第四章 → 第五章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">告诉温斯洛真相</span><span class="ct-tag">告知真相</span></div>
+        <div class="choice-tag"><span class="ct-text">追异瞳者</span><span class="ct-tag">追踪异瞳者</span></div>
+      </div>
+      <div class="branch-note" style="margin-top:8px;">如果上一章选了「观察异瞳者」，选项变为：</div>
+      <div class="choices" style="margin-top:6px;">
+        <div class="choice-tag"><span class="ct-text">回14号找温斯洛</span><span class="ct-tag">返回温斯洛</span></div>
+        <div class="choice-tag"><span class="ct-text">继续追踪到伦敦塔</span><span class="ct-tag">继续追踪</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第五章 → 结局</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">接受结局，完成任务</span><span class="ct-tag">接受结局</span></div>
+        <div class="choice-tag"><span class="ct-text">追问002到底怎么了</span><span class="ct-tag">追问到底</span></div>
+      </div>
+    </div>
+
+    <div class="ending-section">
+      <div class="ch-label" style="margin-bottom:10px;">结局判定</div>
+
+      <div class="ending-row ending-hidden">
+        <div class="ending-badge">&#9733;</div>
+        <div class="ending-info">
+          <div class="ending-name">002的秘密（隐藏）</div>
+          <div class="ending-desc">发现地球仪内含002意识备份的完整真相</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        路线A：<code>暗处观察</code> <span class="path-arrow">→</span> <code>观察异瞳者</code> <span class="path-arrow">→</span> <code>追问到底</code><br>
+        路线B：<code>观察异瞳者</code> <span class="path-arrow">→</span> <code>继续追踪</code> <span class="path-arrow">→</span> <code>追问到底</code>
+      </div>
+
+      <div class="ending-row ending-bad">
+        <div class="ending-badge">&#10008;</div>
+        <div class="ending-info">
+          <div class="ending-name">时间悖论（坏结局）</div>
+          <div class="ending-desc">追异瞳者导致无人陪温斯洛最后一刻，持有者死亡</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        路线A：<code>直奔目标</code> <span class="path-arrow">→</span> <code>追踪异瞳者</code><br>
+        路线B：<code>观察异瞳者</code> <span class="path-arrow">→</span> <code>继续追踪</code> <span class="path-arrow">→</span> <code>接受结局</code>
+      </div>
+
+      <div class="ending-row ending-good">
+        <div class="ending-badge">&#10022;</div>
+        <div class="ending-info">
+          <div class="ending-name">温斯洛的告别（好结局）</div>
+          <div class="ending-desc">完成任务，温斯洛得知真相后释然，开始写日记而非信件</div>
+        </div>
+      </div>
+      <div class="path-tree">其余所有组合均导向好结局</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== 百乐门 ==================== -->
+<div class="story-card">
+  <div class="story-header">
+    <div class="story-icon">&#127751;</div>
+    <div><div class="story-title">百乐门之夜 · Shanghai</div><div class="story-sub">上海 · 1920年 · 5章 · 星盘/林家安</div></div>
+  </div>
+  <div class="story-body">
+
+    <div class="chapter">
+      <div class="ch-label">第一章 → 第二章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">等目标去洗手间</span><span class="ct-tag">等待时机</span></div>
+        <div class="choice-tag"><span class="ct-text">接近带伤痕的男人</span><span class="ct-tag">接近男人</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第二章 → 第三章（条件选项）</div>
+      <div class="branch-note">根据第一章的选择，第二章会出现不同的选项</div>
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">若选了「等待时机」（洗手间路线）：</div>
+        <div class="choices" style="margin-bottom:10px;">
+          <div class="choice-tag"><span class="ct-text">接受星盘追问来历</span><span class="ct-tag">接受追问</span></div>
+          <div class="choice-tag"><span class="ct-text">先弄清那个男人的身份</span><span class="ct-tag">查清身份</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">若选了「接近男人」（接近男人路线）：</div>
+        <div class="choices">
+          <div class="choice-tag"><span class="ct-text">和周恒合作制定计划</span><span class="ct-tag">合作计划</span></div>
+          <div class="choice-tag"><span class="ct-text">先独自去找目标接触</span><span class="ct-tag">独自接触</span></div>
+        </div>
+      </div>
+      <div class="branch-note" style="margin-top:6px;">四条路径在第三章汇合：接受追问 / 独自接触 / 查清身份 / 合作计划 → 均进入「回收流程」或「尊重意愿」选择</div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第三章 → 第四章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">按管理局流程回收</span><span class="ct-tag">回收流程</span></div>
+        <div class="choice-tag"><span class="ct-text">尊重林家安的意愿</span><span class="ct-tag">尊重意愿</span></div>
+      </div>
+      <div class="branch-note">选「回收流程」会触发分支：交了星盘后还有回头机会</div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第四章 → 第五章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">追问林家安想做什么</span><span class="ct-tag">追问意图</span></div>
+        <div class="choice-tag"><span class="ct-text">接受答案离开</span><span class="ct-tag">接受离开</span></div>
+      </div>
+      <div class="branch-note" style="margin-top:8px;">如果上一章选了「回收流程」（交星盘），选项变为：</div>
+      <div class="choices" style="margin-top:6px;">
+        <div class="choice-tag"><span class="ct-text">回头找陈维问清楚</span><span class="ct-tag">回头追问</span></div>
+        <div class="choice-tag"><span class="ct-text">结案归档不再过问</span><span class="ct-tag">结案归档</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第五章 → 结局</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">接受结局</span><span class="ct-tag">接受结局</span></div>
+        <div class="choice-tag"><span class="ct-text">追问更多细节</span><span class="ct-tag">追问到底</span></div>
+      </div>
+    </div>
+
+    <div class="ending-section">
+      <div class="ch-label" style="margin-bottom:10px;">结局判定</div>
+
+      <div class="ending-row ending-hidden">
+        <div class="ending-badge">&#9733;</div>
+        <div class="ending-info">
+          <div class="ending-name">林家安还活着（隐藏）</div>
+          <div class="ending-desc">理解零号计划真正含义——意识的自由流动</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        路线A：<code>合作计划</code> <span class="path-arrow">→</span> <code>尊重意愿</code> <span class="path-arrow">→</span> <code>追问到底</code><br>
+        路线B：<code>回收流程</code> <span class="path-arrow">→</span> <code>回头追问</code> <span class="path-arrow">→</span> <code>追问到底</code><br>
+        路线C：<code>回收流程</code> <span class="path-arrow">→</span> <code>结案归档</code> <span class="path-arrow">→</span> <code>追问到底</code>
+      </div>
+
+      <div class="ending-row ending-bad">
+        <div class="ending-badge">&#10008;</div>
+        <div class="ending-info">
+          <div class="ending-name">意识消散（坏结局）</div>
+          <div class="ending-desc">管理局封存导致量子核心过载，意识备份损毁至12.7%</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        <code>回收流程</code> <span class="path-arrow">→</span> <code>接受结局</code><br>
+        或 <code>回收流程</code> <span class="path-arrow">→</span> <code>结案归档</code> <span class="path-arrow">→</span> <code>接受结局</code>
+      </div>
+
+      <div class="ending-row ending-good">
+        <div class="ending-badge">&#10022;</div>
+        <div class="ending-info">
+          <div class="ending-name">林家安的选择（好结局）</div>
+          <div class="ending-desc">不回收星盘，让意识备份留在1920年上海</div>
+        </div>
+      </div>
+      <div class="path-tree">其余所有组合均导向好结局</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== 新宿地下 ==================== -->
+<div class="story-card">
+  <div class="story-header">
+    <div class="story-icon">&#127761;</div>
+    <div><div class="story-title">新宿地下第七层 · Underground</div><div class="story-sub">东京 · 2089年 · 4章 · 时间锚定器</div></div>
+  </div>
+  <div class="story-body">
+
+    <div class="chapter">
+      <div class="ch-label">第一章 → 第二章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">先找出监视者位置</span><span class="ct-tag">找监视者</span></div>
+        <div class="choice-tag"><span class="ct-text">直接破解B-12的门</span><span class="ct-tag">破门而入</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第二章 → 第三章（条件选项）</div>
+      <div class="branch-note">根据第一章的选择，第二章会出现不同的选项</div>
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">若选了「找监视者」：</div>
+        <div class="choices" style="margin-bottom:10px;">
+          <div class="choice-tag"><span class="ct-text">和桐岛合作夹击</span><span class="ct-tag">合作夹击</span></div>
+          <div class="choice-tag"><span class="ct-text">独自进入B-12谈判</span><span class="ct-tag">谈判</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">若选了「破门而入」：</div>
+        <div class="choices">
+          <div class="choice-tag"><span class="ct-text">尝试与持器者谈判</span><span class="ct-tag">谈判</span></div>
+          <div class="choice-tag"><span class="ct-text">先制服持器者再说</span><span class="ct-tag">强攻制服</span></div>
+        </div>
+      </div>
+      <div class="branch-note" style="margin-top:6px;">「合作夹击」和「强攻制服」路线均汇入仓田击毙秋山的场景，后续选项相同：「相信仓田」/「逮捕仓田」；「谈判」路线保持独立（「帮助修复」/「标准流程」）</div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第三章 → 第四章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">相信仓田，确保女儿治疗</span><span class="ct-tag">相信仓田</span></div>
+        <div class="choice-tag"><span class="ct-text">按规程逮捕仓田</span><span class="ct-tag">逮捕仓田</span></div>
+      </div>
+      <div class="branch-note" style="margin-top:8px;">如果上一章选了「谈判」，选项为：</div>
+      <div class="choices" style="margin-top:6px;">
+        <div class="choice-tag"><span class="ct-text">帮他女儿完成修复程序</span><span class="ct-tag">帮助修复</span></div>
+        <div class="choice-tag"><span class="ct-text">标准流程处理</span><span class="ct-tag">标准流程</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第四章 → 结局</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">接受结局</span><span class="ct-tag">接受结局</span></div>
+        <div class="choice-tag"><span class="ct-text">确认女孩是否安好</span><span class="ct-tag">确认女孩</span></div>
+        <div class="choice-tag"><span class="ct-text">追问装置的真正功能</span><span class="ct-tag">追问到底</span></div>
+      </div>
+    </div>
+
+    <div class="ending-section">
+      <div class="ch-label" style="margin-bottom:10px;">结局判定</div>
+
+      <div class="ending-row ending-hidden">
+        <div class="ending-badge">&#9733;</div>
+        <div class="ending-info">
+          <div class="ending-name">锚点的真相（隐藏）</div>
+          <div class="ending-desc">发现锚定器的真正功能——不是冻结时间，而是保护时间线</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        路线A：<code>谈判</code> <span class="path-arrow">→</span> <code>帮助修复</code> <span class="path-arrow">→</span> <code>追问到底</code><br>
+        路线B：<code>相信仓田</code> <span class="path-arrow">→</span> <code>确认女孩</code>
+      </div>
+
+      <div class="ending-row ending-bad">
+        <div class="ending-badge">&#10008;</div>
+        <div class="ending-info">
+          <div class="ending-name">时间冻结（坏结局）</div>
+          <div class="ending-desc">按规矩办事导致女孩修复程序中断</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        路线A：<code>破门而入</code> <span class="path-arrow">→</span> <code>标准流程</code><br>
+        路线B：<code>逮捕仓田</code> <span class="path-arrow">→</span> <code>接受结局</code>
+      </div>
+
+      <div class="ending-row ending-good">
+        <div class="ending-badge">&#10022;</div>
+        <div class="ending-info">
+          <div class="ending-name">女儿的微笑（好结局）</div>
+          <div class="ending-desc">回收锚定器同时确保女孩的治疗不被中断</div>
+        </div>
+      </div>
+      <div class="path-tree">其余所有组合均导向好结局</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== 浴场 ==================== -->
+<div class="story-card">
+  <div class="story-header">
+    <div class="story-icon">&#127981;</div>
+    <div><div class="story-title">阿格里帕浴场 · Rome Bath</div><div class="story-sub">罗马 · 公元前43年 · 6章 · 军事蓝图</div></div>
+  </div>
+  <div class="story-body">
+
+    <div class="chapter">
+      <div class="ch-label">第一章 → 第二章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">完整拟态生殖系统</span><span class="ct-tag">完整拟态</span></div>
+        <div class="choice-tag"><span class="ct-text">用亚麻布围腰遮掩</span><span class="ct-tag">亚麻围腰</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第二章 → 第三章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">直接去更衣间</span><span class="ct-tag">直奔更衣间</span></div>
+        <div class="choice-tag"><span class="ct-text">先泡热水池观察环境</span><span class="ct-tag">先泡热水池</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第三章 → 第四章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">编个故事假装走错</span><span class="ct-tag">编造谎言</span></div>
+        <div class="choice-tag"><span class="ct-text">坦然面对罗马人</span><span class="ct-tag">坦然面对</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第四章 → 第五章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">尽快离开</span><span class="ct-tag">尽快离开</span></div>
+        <div class="choice-tag"><span class="ct-text">跟提图斯聊聊</span><span class="ct-tag">聊聊提图斯</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第五章 → 第六章</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">追问异常的人</span><span class="ct-tag">追问异常</span></div>
+        <div class="choice-tag"><span class="ct-text">享受此刻安宁</span><span class="ct-tag">享受安宁</span></div>
+      </div>
+    </div>
+
+    <div class="chapter">
+      <div class="ch-label">第六章 → 结局</div>
+      <div class="choices">
+        <div class="choice-tag"><span class="ct-text">告诉真相并消除记忆</span><span class="ct-tag">告别消忆</span></div>
+        <div class="choice-tag"><span class="ct-text">什么都不说默默告别</span><span class="ct-tag">默默告别</span></div>
+      </div>
+    </div>
+
+    <div class="ending-section">
+      <div class="ch-label" style="margin-bottom:10px;">结局判定</div>
+
+      <div class="ending-row ending-hidden">
+        <div class="ending-badge">&#9733;</div>
+        <div class="ending-info">
+          <div class="ending-name">异瞳者的踪迹（隐藏）</div>
+          <div class="ending-desc">从提图斯口中获得002在公元前43年罗马活动的情报</div>
+        </div>
+      </div>
+      <div class="path-tree">
+        <code>聊聊提图斯</code> <span class="path-arrow">→</span> <code>追问异常</code> <span class="path-arrow">→</span> <code>默默告别</code>
+      </div>
+
+      <div class="ending-row ending-bad">
+        <div class="ending-badge">&#10008;</div>
+        <div class="ending-info">
+          <div class="ending-name">身份暴露（坏结局）</div>
+          <div class="ending-desc">谎言被拆穿，被罗马人围困，紧急撤离丢失数据盘</div>
+        </div>
+      </div>
+      <div class="path-tree"><code>编造谎言</code> <span class="path-arrow">→</span> <code>尽快离开</code></div>
+
+      <div class="ending-row ending-good">
+        <div class="ending-badge">&#10022;</div>
+        <div class="ending-info">
+          <div class="ending-name">罗马人的荣誉（好结局）</div>
+          <div class="ending-desc">成功取回蓝图，提图斯只记得一个丢戒指的希腊人</div>
+        </div>
+      </div>
+      <div class="path-tree">其余所有组合均导向好结局</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 快速参考表 -->
+<div class="story-card">
+  <div class="story-header">
+    <div class="story-icon">&#128203;</div>
+    <div><div class="story-title">隐藏结局快速解锁路线</div><div class="story-sub">每个故事最短路径汇总</div></div>
+  </div>
+  <div class="story-body" style="font-size:13px; line-height:2;">
+    <div style="margin-bottom:10px;"><span style="color:var(--gold);font-weight:600;">&#127963; 舰队街:</span> 暗处观察 → 观察异瞳者 → 追问到底</div>
+    <div style="margin-bottom:10px;"><span style="color:var(--gold);font-weight:600;">&#127751; 百乐门:</span> 合作计划 → 尊重意愿 → 追问到底（或 回收流程 → 回头追问/结案归档 → 追问到底）</div>
+    <div style="margin-bottom:10px;"><span style="color:var(--gold);font-weight:600;">&#127761; 新宿地下:</span> 谈判 → 帮助修复 → 追问到底（或 相信仓田 → 确认女孩）</div>
+    <div style="margin-bottom:10px;"><span style="color:var(--gold);font-weight:600;">&#127981; 浴场:</span> 聊聊提图斯 → 追问异常 → 默默告别</div>
+  </div>
+</div>
+
+<div class="footer">
+  时空模拟 v3.0 &middot; 泽罗世界观 &middot; 共 4 个故事 &middot; 每故事 3 种结局
+</div>
+
+</body>
+</html>

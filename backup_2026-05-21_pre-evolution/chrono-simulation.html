@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>时空模拟 · 时序管理局招募测试</title>
+<style>
+:root{
+  --bg:#0a0a0a;
+  --panel:rgba(8,3,3,.97);
+  --text:#ddd;
+  --gold:#d4a843;
+  --gold-dim:#8b6914;
+  --gold-faint:#5a4020;
+  --red:#c03c3c;
+  --red-dim:#8b1a1a;
+  --blue:#4a80b0;
+  --green:#4a8a50;
+  --border:rgba(150,30,30,.4);
+  --circuit-color:rgba(192,60,60,.15);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ===== 螺旋背景（Canvas动态生成，分辨率自适应）===== */
+#spiral-bg {
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  /* CSS fallback：如果Canvas渲染失败，显示渐变 */
+  background: radial-gradient(ellipse at 50% 50%, rgba(212,168,67,0.05) 0%, transparent 70%);
+}
+#spiral-bg canvas {
+  position: absolute; inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: spiral-rotate 90s linear infinite;
+}
+#spiral-bg.week2 canvas {
+  opacity: 0.35;
+  animation-duration: 180s;
+}
+#spiral-bg.enhanced canvas {
+  opacity: 0.5;
+  animation-duration: 20s;
+}
+@keyframes spiral-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== 引导页 ===== */
+#intro-page {
+  position: fixed; inset: 0;
+  background: #050505;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "Microsoft YaHei", sans-serif;
+  padding: 24px;
+}
+#intro-page::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 60%, rgba(212,168,67,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+#intro-page > * { position: relative; z-index: 1; }
+#intro-page .intro-icon {
+  font-size: 48px;
+  margin-bottom: 24px;
+  opacity: 0.8;
+}
+#intro-page .intro-title {
+  color: var(--gold);
+  font-size: 20px;
+  letter-spacing: 6px;
+  margin-bottom: 12px;
+  text-shadow: 0 0 20px rgba(212,168,67,0.3);
+}
+#intro-page .intro-text {
+  color: #999;
+  font-size: 13px;
+  line-height: 2.2;
+  max-width: 480px;
+  text-align: center;
+  margin-bottom: 36px;
+  white-space: pre-wrap;
+}
+#intro-page .intro-btn {
+  background: rgba(139,105,20,0.3);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 12px 48px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 3px;
+  transition: all .3s;
+}
+#intro-page .intro-btn:hover {
+  background: var(--gold-dim);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(212,168,67,0.3);
+}
+#intro-page .intro-hint {
+  color: var(--gold-faint);
+  font-size: 11px;
+  margin-top: 32px;
+  letter-spacing: 2px;
+  opacity: 0.5;
+}
+
+/* ===== 登录界面 ===== */
+#gate {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+#gate::before {
+  content: '';
+  position: absolute; inset: 0;
+  opacity: 0.2; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg stroke='%23c03c3c' stroke-width='0.5' fill='none' opacity='0.3'%3E%3Cpath d='M0 15h15M30 0v15M45 0v10M60 15H45M15 30v15M30 45v15M0 30H15M45 30H60M30 60V45M15 45H0M30 15H45M45 45h15M15 60V45'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 60px 60px;
+}
+#gate > * { position: relative; z-index: 1; }
+#gate h1 {
+  color: var(--gold);
+  font-size: 24px;
+  letter-spacing: 6px;
+  margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(212,168,67,.3);
+}
+#gate .sub {
+  color: var(--gold-dim);
+  font-size: 12px;
+  letter-spacing: 3px;
+  margin-bottom: 32px;
+}
+#gate input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--gold);
+  padding: 12px 20px;
+  font-size: 16px;
+  width: 260px;
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+  letter-spacing: 2px;
+  transition: border-color .3s, box-shadow .3s;
+}
+#gate input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 15px rgba(212,168,67,.2);
+}
+#gate button {
+  margin-top: 16px;
+  background: rgba(139,105,20,.3);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 12px 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  transition: all .3s;
+}
+#gate button:hover {
+  background: var(--gold-dim);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(212,168,67,.3);
+}
+#gate .err {
+  color: var(--red);
+  font-size: 12px;
+  margin-top: 10px;
+  min-height: 18px;
+  letter-spacing: 1px;
+}
+#gate .hint {
+  color: var(--gold-faint);
+  font-size: 11px;
+  margin-top: 24px;
+  letter-spacing: 1px;
+}
+
+/* ===== 顶栏 ===== */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--red-dim), var(--gold));
+  z-index: 100;
+}
+.topbar-text {
+  position: fixed; top: 12px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--gold-faint);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* ===== 主容器 ===== */
+#main {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 800px;
+  height: 80vh;
+  max-height: 600px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 60px rgba(192,30,30,.2);
+}
+
+/* ===== 任务选择界面 ===== */
+#mission-select {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  overflow-y: auto;
+}
+#mission-select h2 {
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+#mission-select .subtitle {
+  color: var(--gold-faint);
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
+}
+.mission-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.mission-card {
+  background: rgba(15,10,10,.8);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+}
+.mission-card:hover {
+  border-color: var(--gold-dim);
+  background: rgba(30,20,10,.8);
+  box-shadow: 0 0 20px rgba(212,168,67,.15);
+}
+.mission-card.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.mission-card.locked:hover {
+  border-color: var(--border);
+  background: rgba(15,10,10,.8);
+  box-shadow: none;
+}
+.mission-card .icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+.mission-card .title {
+  color: var(--gold);
+  font-size: 15px;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+.mission-card .sub {
+  color: var(--gold-faint);
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+.mission-card .desc {
+  color: var(--text);
+  font-size: 12px;
+  margin-top: 10px;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+/* ===== 叙事区域 ===== */
+#narrative-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#narrative-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+#narrative-header .back-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--gold-dim);
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all .2s;
+}
+#narrative-header .back-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+#narrative-header .chapter-title {
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+#narrative-header .mission-tag {
+  margin-left: auto;
+  color: var(--gold-faint);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+#narrative-body {
+  flex: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+  line-height: 2;
+  font-size: 14px;
+  position: relative;
+}
+#narrative-body .text {
+  white-space: pre-wrap;
+}
+/* 泽罗的金色文字 */
+.gold-text {
+  color: var(--gold);
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(212,168,67,.4);
+  transition: color .5s, text-shadow .5s;
+}
+/* 破球的声音（旁白式，无标题） */
+.po-annotation {
+  display: inline;
+  color: var(--blue);
+  font-style: italic;
+  opacity: 0.85;
+  transition: color .5s;
+}
+/* 红色强调文字 */
+.red-text {
+  color: var(--red);
+  font-weight: bold;
+}
+
+/* ===== 选择按钮 ===== */
+#choices {
+  padding: 16px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.choice-btn {
+  background: rgba(15,10,10,.8);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 20px;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .3s;
+  line-height: 1.6;
+}
+.choice-btn:hover {
+  border-color: var(--gold-dim);
+  background: rgba(30,20,10,.6);
+  padding-left: 28px;
+  color: var(--gold);
+}
+
+/* ===== 结局界面 ===== */
+#ending-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  overflow-y: auto;
+  min-height: 0;
+}
+#ending-view .badge {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+#ending-view .title {
+  color: var(--gold);
+  font-size: 20px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+#ending-view .sub {
+  color: var(--gold-faint);
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-bottom: 30px;
+}
+#ending-view .text {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 2;
+  white-space: pre-wrap;
+  max-width: 500px;
+  text-align: left;
+}
+#ending-view .next-btn {
+  margin-top: 30px;
+  background: rgba(139,105,20,.3);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 12px 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  transition: all .3s;
+}
+#ending-view .next-btn:hover {
+  background: var(--gold-dim);
+  color: #fff;
+}
+
+/* ===== 页脚版权信息 ===== */
+#footer-copy {
+  position: fixed;
+  bottom: 8px;
+  right: 16px;
+  font-size: 10px;
+  color: var(--gold-faint);
+  opacity: 0.3;
+  z-index: 100;
+  letter-spacing: 1px;
+}
+
+/* ===== 二周目档案界面 ===== */
+#week2-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  overflow-y: auto;
+}
+#w2-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+#w2-header h2 {
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+#w2-header .sub {
+  color: var(--gold-faint);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+.archive-section {
+  margin-bottom: 32px;
+}
+.archive-section h3 {
+  color: var(--gold-dim);
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.archive-item {
+  background: rgba(15,10,10,.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all .3s;
+}
+.archive-item:hover {
+  border-color: var(--gold-dim);
+  background: rgba(30,20,10,.6);
+}
+.archive-item .a-title {
+  color: var(--gold);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.archive-item .a-sub {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.7;
+  opacity: 0.8;
+}
+.archive-content {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 2;
+  white-space: pre-wrap;
+}
+.endings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ending-card {
+  background: rgba(15,10,10,.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all .3s;
+}
+.ending-card:hover {
+  border-color: var(--gold-dim);
+}
+.ending-card .e-badge {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.ending-card .e-title {
+  color: var(--gold);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.ending-card .e-sub {
+  color: var(--gold-faint);
+  font-size: 11px;
+}
+
+/* ===== 二周目视觉主题（档案处）===== */
+body[data-week="2"] {
+  --bg: #06080c;
+  --panel: rgba(10,18,30,.97);
+  --text: #c8d8e8;
+  --gold: #7ab0d4;
+  --gold-dim: #4a7090;
+  --gold-faint: #2a4058;
+  --red: #5a8ab0;
+  --red-dim: #3a6080;
+  --blue: #7ab0d4;
+  --green: #5a8a70;
+  --border: rgba(100,160,220,.25);
+  --circuit-color: rgba(100,160,220,.12);
+  background: var(--bg);
+  color: var(--text);
+}
+body[data-week="2"] .topbar {
+  background: linear-gradient(90deg, var(--gold), var(--red-dim), var(--gold));
+}
+body[data-week="2"] #spiral-bg {
+  opacity: 0.012;
+  background: conic-gradient(from 0deg, transparent, var(--gold-faint), transparent, var(--red-dim), transparent);
+}
+body[data-week="2"] #main {
+  border-color: var(--border);
+  box-shadow: 0 0 60px rgba(100,160,220,.15);
+}
+body[data-week="2"] .mission-card,
+body[data-week="2"] .archive-item,
+body[data-week="2"] .ending-card {
+  border-color: var(--border);
+}
+body[data-week="2"] .archive-item:hover,
+body[data-week="2"] .ending-card:hover {
+  border-color: var(--gold-dim);
+  background: rgba(20,40,60,.8);
+}
+body[data-week="2"] .choice-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+body[data-week="2"] #gate {
+  background: var(--bg);
+}
+body[data-week="2"] #gate::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg stroke='%234a80b0' stroke-width='0.5' fill='none' opacity='0.25'%3E%3Cpath d='M30 0v60M0 30h60'/%3E%3Ccircle cx='30' cy='30' r='12'/%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ===== 响应式 ===== */
+/* ===== 移动端适配 ===== */
+@media (max-width: 600px) {
+  #main {
+    width: 98vw;
+    height: 92vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    overflow-y: auto;
+  }
+  #intro-page { padding: 16px; }
+  #intro-page .intro-text {
+    font-size: 12px;
+    line-height: 2;
+    max-width: 95vw;
+    padding: 0 8px;
+  }
+  #intro-page .intro-title { font-size: 17px; letter-spacing: 4px; }
+  #intro-page .intro-btn { padding: 14px 40px; min-height: 48px; }
+  #gate h1 { font-size: 20px; letter-spacing: 4px; }
+  #gate input { width: 80vw; max-width: 300px; font-size: 15px; padding: 14px 16px; }
+  .topbar-text { font-size: 9px; letter-spacing: 2px; }
+  .mission-grid {
+    grid-template-columns: 1fr;
+    padding: 8px 16px 20px;
+    gap: 10px;
+  }
+  #narrative-view {
+    padding: 0;
+  }
+  #narrative-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  #narrative-header .chapter-title {
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+  #narrative-body {
+    padding: 16px 18px;
+    font-size: 13px;
+    line-height: 2;
+    overflow-y: auto;
+    flex: 1;
+  }
+  #narrative-body .text {
+    font-size: 13px;
+    line-height: 2;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #choices {
+    padding: 12px 16px 20px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .choice-btn {
+    padding: 14px 16px;
+    font-size: 13px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    line-height: 1.5;
+  }
+  #ending-view {
+    padding: 24px 16px 40px;
+  }
+  #ending-view .title { font-size: 17px; }
+  #ending-view .text {
+    font-size: 12px;
+    max-width: 95vw;
+  }
+  .endings-grid {
+    grid-template-columns: 1fr;
+    padding: 8px 16px 20px;
+    gap: 10px;
+  }
+  #hypno-text div {
+    font-size: 26px !important;
+    letter-spacing: 10px !important;
+    padding: 0 16px;
+    text-align: center;
+    word-break: break-all;
+  }
+  #footer-copy { display: none; }
+}
+
+@media (max-width: 400px) {
+  #intro-page .intro-text { font-size: 11px; }
+  #narrative-body { padding: 12px 14px; font-size: 12px; }
+  #narrative-body .text { font-size: 12px; }
+  .choice-btn { font-size: 12px; padding: 12px 14px; min-height: 44px; }
+  #gate h1 { font-size: 17px; letter-spacing: 3px; }
+  #gate .sub { font-size: 10px; }
+  #hypno-text div { font-size: 22px !important; letter-spacing: 8px !important; }
+  #ending-view .text { font-size: 11px; }
+}
+
+/* 刘海屏安全区 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  #intro-page { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  #narrative-body { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  #choices { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+}
+
+/* ===== 解谜界面 ===== */
+#puzzle-view {
+  position: fixed; inset: 0;
+  z-index: 500;
+  background: rgba(5,5,5,0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+#puzzle-view .puzzle-question {
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+#puzzle-view .puzzle-sub {
+  color: var(--gold-faint);
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+  opacity: 0.6;
+}
+#puzzle-view .puzzle-input-wrap {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+#puzzle-view input {
+  background: var(--panel);
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  color: var(--gold);
+  padding: 12px 20px;
+  font-size: 16px;
+  width: 240px;
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+  letter-spacing: 2px;
+}
+#puzzle-view input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 15px rgba(212,168,67,0.2);
+}
+#puzzle-view .puzzle-btn {
+  background: rgba(139,105,20,0.3);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 12px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  transition: all .3s;
+  min-height: 44px;
+}
+#puzzle-view .puzzle-btn:hover {
+  background: var(--gold-dim);
+  color: #fff;
+}
+#puzzle-view .puzzle-err {
+  color: var(--red-dim);
+  font-size: 12px;
+  margin-top: 16px;
+  min-height: 18px;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 360px;
+}
+
+/* 尝试次数指示器 */
+#puzzle-view .puzzle-attempts {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+#puzzle-view .puzzle-attempts .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  opacity: 0.3;
+  transition: all .4s;
+}
+#puzzle-view .puzzle-attempts .dot.active {
+  opacity: 1;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(212,168,67,0.4);
+}
+#puzzle-view .puzzle-attempts .dot.used {
+  opacity: 0.5;
+  background: var(--red-dim);
+}
+/* 最后一次机会时闪烁警告 */
+#puzzle-view .puzzle-attempts .dot.last {
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(212,168,67,0.4); }
+  50% { opacity: 0.3; box-shadow: 0 0 0 rgba(212,168,67,0); }
+}
+@media (max-width: 600px) {
+  #puzzle-view { padding: 20px; }
+  #puzzle-view .puzzle-question { font-size: 15px; }
+  #puzzle-view input { width: 180px; font-size: 14px; padding: 14px 12px; }
+  #puzzle-view .puzzle-btn { padding: 14px 24px; }
+  #puzzle-view .puzzle-input-wrap { flex-direction: column; gap: 12px; }
+}
+
+/* 触摸设备隐藏hover效果（hover残留问题） */
+@media (hover: none) and (pointer: coarse) {
+  .choice-btn:hover {
+    border-color: var(--border);
+    background: rgba(15,10,10,.8);
+    padding-left: 20px;
+    color: var(--text);
+  }
+  .choice-btn:active {
+    border-color: var(--gold-dim);
+    background: rgba(30,20,10,.6);
+    color: var(--gold);
+  }
+  #intro-page .intro-btn:hover {
+    background: rgba(139,105,20,0.3);
+    color: var(--gold);
+    box-shadow: none;
+  }
+  #intro-page .intro-btn:active {
+    background: var(--gold-dim);
+    color: #fff;
+  }
+}
+
+/* ===== 催眠文字脉冲动画 ===== */
+@keyframes hypno-pulse {
+  0%, 100% { text-shadow: 0 0 30px rgba(212,168,67,0.5), 0 0 60px rgba(212,168,67,0.2); }
+  50% { text-shadow: 0 0 40px rgba(212,168,67,0.7), 0 0 80px rgba(212,168,67,0.3), 0 0 120px rgba(212,168,67,0.1); }
+}
+@keyframes hypno-fade-in {
+  from { opacity: 0; transform: scale(1.3); letter-spacing: 20px; }
+  to { opacity: 1; transform: scale(1); letter-spacing: 12px; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- 螺旋背景 -->
+<div id="spiral-bg">
+  <canvas id="spiral-canvas"></canvas>
+</div>
+
+<!-- 引导页 -->
+<div id="intro-page">
+  <div class="intro-icon">🕳</div>
+  <div class="intro-title">时 空 模 拟</div>
+    <div class="intro-text">他三天没回消息了。
+
+你翻遍了他的房间。电脑开着，但桌上有个东西让你停住了。
+
+一台陌生的设备。不是市面上的品牌——外壳是哑光黑的，没有任何logo。旁边压着一张字条，是他的笔迹：
+
+「戴上它。输入密码：zero2026。——就当是帮我一个忙。
+如果你完成了，试试这个：zerotime。」
+
+你不知道他去了哪里。
+也不知道这台东西是哪里来的。
+
+但你拿起它，按下了开机键。
+
+镜片亮了。
+声音从很深的某个地方传来——像是钟表的滴答声。</div>
+  <button class="intro-btn" id="intro-btn">进 入</button>
+  <div class="intro-hint">© 时序管理局 · 所有权利保留</div>
+</div>
+
+<!-- 登录界面 -->
+<div id="gate">
+  <h1>时 空 模 拟</h1>
+  <div class="sub">CHRONO SIMULATION · RECRUITMENT TEST</div>
+  <input id="gate-input" type="text" placeholder="输入准入密钥" autocomplete="off" spellcheck="false">
+  <button id="gate-btn">进 入</button>
+  <div class="err" id="gate-err"></div>
+  <div class="hint" id="gate-hint">© 时序管理局 · 所有权利保留</div>
+</div>
+
+<!-- 顶栏 -->
+<div class="topbar"></div>
+<div class="topbar-text" id="topbar-text">时序管理局 · 招募测试</div>
+
+<!-- 主容器 -->
+<div id="main" style="display:none;">
+  <!-- 任务选择界面（一周目） -->
+  <div id="mission-select">
+    <h2>时 空 模 拟</h2>
+    <div class="subtitle">CHRONO SIMULATION · TRAINING MISSION</div>
+    <div class="mission-grid" id="mission-grid"></div>
+  </div>
+
+  <!-- 叙事视图（隐藏） -->
+  <div id="narrative-view" style="display:none;"></div>
+
+  <!-- 结局视图（隐藏） -->
+  <div id="ending-view" style="display:none;"></div>
+
+  <!-- 二周目档案视图（隐藏） -->
+  <div id="week2-view" style="display:none;"></div>
+
+<!-- 谜题界面（隐藏） -->
+<div id="puzzle-view" style="display:none;">
+  <div class="puzzle-question"></div>
+  <div class="puzzle-sub">证明你已经理解了这次模拟</div>
+  <div class="puzzle-attempts" id="puzzle-attempts">
+    <span class="dot active"></span>
+    <span class="dot active"></span>
+    <span class="dot active"></span>
+  </div>
+  <div class="puzzle-input-wrap">
+    <input type="text" id="puzzle-input" placeholder="输入你的答案" autocomplete="off">
+    <button class="puzzle-btn" id="puzzle-submit-btn">确认</button>
+  </div>
+  <div class="puzzle-err" id="puzzle-err"></div>
+</div>
+</div>
+
+<!-- 页脚 -->
+<div id="footer-copy">© 时序管理局 · 档案编号：TAB-2026-SIM</div>
+
+<!-- 数据文件（先加载数据，再运行引擎） -->
+<script src="chrono-simulation-data.js"></script>
+
+<!-- 引擎代码 -->
+<script>
+/* ============================================================
+   时空模拟 · 视觉小说引擎 v1.0
+   管理局视角 · 招募测试版
+   ============================================================ */
+
+(function(){
+'use strict';
+
+// ===== 高分辨率螺旋生成（Canvas动态渲染）=====
+function generateSpiral(){
+  var canvas = document.getElementById('spiral-canvas');
+  if(!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  var w = rect.width;
+  var h = rect.height;
+  if(w < 10 || h < 10) return;
+
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+
+  var ctx;
+  try {
+    ctx = canvas.getContext('2d');
+  } catch(e) { return; }
+  if(!ctx) return;
+
+  try {
+    ctx.scale(dpr, dpr);
+  } catch(e) { /* 移动端某些浏览器可能不支持scale */ }
+
+  var cx = w / 2;
+  var cy = h / 2;
+  var maxR = Math.sqrt(cx*cx + cy*cy) + 100;
+
+  // 透明背景，只画金色螺旋线
+  ctx.clearRect(0, 0, w, h);
+
+  // 螺旋参数
+  var spacing = 7;        // 每圈间距(pixels)
+  var arcAngle = Math.PI * 1.7;  // 每段弧长(~306度)
+  var rotationStep = 0.12;       // 每圈旋转偏移
+
+  ctx.strokeStyle = 'rgba(212, 168, 67, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+
+  for(var r = 12; r < maxR; r += spacing){
+    var rot = r * rotationStep;
+    ctx.arc(cx, cy, r, rot, rot + arcAngle);
+  }
+  ctx.stroke();
+
+  // 第二层：更细更淡的交叉螺旋线（增加层次感）
+  ctx.strokeStyle = 'rgba(212, 168, 67, 0.12)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  for(var r2 = 16; r2 < maxR; r2 += spacing * 1.5){
+    var rot2 = r2 * 0.08 + Math.PI;
+    ctx.arc(cx, cy, r2, rot2, rot2 + arcAngle * 0.7);
+  }
+  ctx.stroke();
+}
+
+// 初始化螺旋 + 窗口大小变化时重新生成
+function initSpiral(){
+  generateSpiral();
+  var resizeTimer;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(generateSpiral, 200);
+  });
+}
+
+// ===== 状态 =====
+var state = {
+  week: 1,
+  currentMission: null,
+  currentChapter: 0,
+  history: [],
+  endings: [],
+  missionResults: {},
+  // 线性任务链
+  missionOrder: ['winslow', 'shanghai', 'underground', 'rome_bath'],
+  missionIndex: 0,
+  puzzleSolved: false  // 当前任务谜题是否已解
+};
+
+// ===== 密码系统 =====
+var PASSWORDS = {
+  week1: 'zero2026',
+  week2: 'zerotime'
+};
+
+// ===== 登录逻辑 =====
+var gate = document.getElementById('gate');
+var gateInput = document.getElementById('gate-input');
+var gateBtn = document.getElementById('gate-btn');
+var gateErr = document.getElementById('gate-err');
+
+gateBtn.addEventListener('click', tryUnlock);
+gateInput.addEventListener('keydown', function(e){
+  if(e.key === 'Enter') tryUnlock();
+});
+
+function tryUnlock(){
+  var val = gateInput.value.trim();
+  gateErr.textContent = '';
+
+  if(val === PASSWORDS.week1){
+    // 一周目：线性任务链，自动开始
+    state.week = 1;
+    state.missionIndex = 0;
+    gate.style.display = 'none';
+    document.body.removeAttribute('data-week');
+    document.getElementById('spiral-bg').classList.remove('week2');
+    document.getElementById('main').style.display = 'flex';
+    document.getElementById('topbar-text').textContent = '时序管理局 · 招募测试';
+    startSequence();
+  } else if(val === PASSWORDS.week2){
+    // 二周目：直接触发Clock对话
+    state.week = 2;
+    gate.style.display = 'none';
+    document.body.setAttribute('data-week', '2');
+    document.getElementById('spiral-bg').classList.add('week2');
+    document.getElementById('main').style.display = 'flex';
+    document.getElementById('topbar-text').textContent = '时序管理局 · 深层模式';
+    // 显示过渡文字后直接进入Clock对话
+    showWeek2Transition();
+  } else {
+    gateErr.textContent = '密钥验证失败。请联系管理员。';
+    gateInput.value = '';
+    // 输入框微动效果
+    gateInput.style.transform = 'translateX(-3px)';
+    setTimeout(function(){ gateInput.style.transform = 'translateX(3px)'; }, 50);
+    setTimeout(function(){ gateInput.style.transform = 'translateX(0)'; }, 100);
+  }
+}
+
+// ===== 引导页逻辑 =====
+var introPage = document.getElementById('intro-page');
+var introBtn = document.getElementById('intro-btn');
+// 初始状态：显示引导页，隐藏登录和主界面
+introPage.style.display = 'flex';
+document.getElementById('gate').style.display = 'none';
+document.getElementById('main').style.display = 'none';
+
+introBtn.addEventListener('click', function(){
+  introPage.style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
+  // 用户交互后启动BGM和螺旋
+  setTimeout(initBGM, 200);
+  setTimeout(initSpiral, 100);
+});
+
+// ===== BGM：打点计时器 + 摩斯电码暗示 =====
+var bgmCtx = null;
+var bgmRunning = false;
+var bgmGain = null;
+
+function initBGM(){
+  if(bgmRunning) return;
+  try {
+    bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
+    bgmRunning = true;
+
+    // 主增益
+    bgmGain = bgmCtx.createGain();
+    bgmGain.gain.value = 0.08;
+    bgmGain.connect(bgmCtx.destination);
+
+    // 低频嗡鸣（非常低，几乎听不到）
+    var drone = bgmCtx.createOscillator();
+    drone.type = 'sine';
+    drone.frequency.value = 55; // A1, very low
+    var droneGain = bgmCtx.createGain();
+    droneGain.gain.value = 0.03;
+    drone.connect(droneGain);
+    droneGain.connect(bgmCtx.destination);
+    drone.start();
+
+    // 摩斯电码：OSCILLATE（ --- ... -.-. .. .-.. .-.. .- - . ）
+    // 简化版：用节奏变化编一个重复暗示
+    var morsePattern = [
+      1,1,1, 0, 1,0,1,0, 0, 1,0,1, 0, 1,1,1, 0, 1,0,1,0, 0,
+      1,0,1, 0, 1,0,1,0, 0, 1,1,1, 0, 1,1,1, 0, 1,0,1,0, 0,
+      1,1,1, 0, 1,1,1, 0, 1,1,1, 0, 1,0,1,0, 0, 1,1,1, 0,
+      1,0,1, 0, 1,1,1, 0, 1,0,1,0, 0, 1,0,1,0, 0,
+      1,1,1, 0, 1,0,1, 0, 1,1,1, 0, 1,0,1, 0, 1,1,1, 0, 1,0,1, 0   // O-S-C-I-L-L-A-T-E
+    ];
+    var tickIndex = 0;
+    var tickRate = 0.8; // seconds between ticks
+
+    function playTick(){
+      var now = bgmCtx.currentTime;
+      // Short tick
+      var osc = bgmCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = 800;
+      var env = bgmCtx.createGain();
+      var vol = morsePattern[tickIndex % morsePattern.length] ? 0.6 : 0.12;
+      env.gain.setValueAtTime(vol * 0.08, now);
+      env.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(env);
+      env.connect(bgmCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+      tickIndex++;
+    }
+
+    function scheduleTick(){
+      if(!bgmRunning) return;
+      playTick();
+      setTimeout(scheduleTick, tickRate * 1000);
+    }
+
+    // 延迟一点开始，让玩家先进入游戏
+    setTimeout(scheduleTick, 3000);
+
+  } catch(e){
+    // BGM fallback silent
+    bgmRunning = false;
+  }
+}
+
+// ===== 任务选择界面 =====
+function initMissionSelect(){
+  var grid = document.getElementById('mission-grid');
+  grid.innerHTML = '';
+
+  MISSIONS.forEach(function(m, i){
+    var card = document.createElement('div');
+    card.className = 'mission-card';
+    card.innerHTML =
+      '<div class="icon">' + m.icon + '</div>' +
+      '<div class="title">' + m.title + '</div>' +
+      '<div class="sub">' + m.sub + '</div>' +
+      '<div class="desc">' + m.desc + '</div>';
+    card.addEventListener('click', function(){ startMission(m.key); });
+    grid.appendChild(card);
+  });
+
+  // 显示任务选择，隐藏其他
+  document.getElementById('mission-select').style.display = 'flex';
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+  if(document.getElementById('week2-view')){
+    document.getElementById('week2-view').style.display = 'none';
+  }
+}
+
+// ===== MISSIONS 元数据 =====
+// （如果 data.js 里没定义，这里给一个备用）
+if(typeof MISSIONS === 'undefined'){
+  var MISSIONS = [
+    { key: 'winslow', title: '舰队街14号', sub: 'LONDON · 1899', desc: '雾。大雾。一个等了十一年的人。一个会发光的黄铜地球仪。和一只在暗处看着你的异瞳。', icon: '&#127963;' },
+    { key: 'shanghai', title: '百乐门之夜', sub: 'SHANGHAI · 1920', desc: '霓虹。镜子。一个七分钟去一次洗手间的男人。和一个说"你以前来过这里"的声音。', icon: '&#127751;' },
+    { key: 'underground', title: '新宿地下第七层', sub: 'TOKYO · 2089', desc: '下行。B1到B7。一个可以冻结时间的装置。和一个用眼泪告诉你"别碰它"的男人。', icon: '&#127761;' },
+    { key: 'rome_bath', title: '阿格里帕浴场', sub: 'ROME · 43 BC', desc: '蒸汽。大理石。第七号壁柜里的铜盘。和一个退役老兵说："时间不是线。是一个圆。"', icon: '&#127981;' }
+  ];
+}
+
+// ===== 开始任务 =====
+function startMission(key){
+  state.currentMission = key;
+  state.currentChapter = 0;
+  state.history = [];
+  state.puzzleSolved = false;
+  state.puzzleFailed = false;
+
+  // 隐藏其他视图
+  document.getElementById('mission-select').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+  document.getElementById('week2-view') && (document.getElementById('week2-view').style.display = 'none');
+  var nv = document.getElementById('narrative-view');
+  nv.style.display = 'flex';
+  nv.innerHTML = '';
+
+  loadChapter();
+}
+
+// ===== 线性任务链 =====
+function startSequence(){
+  state.missionIndex = 0;
+  state.endings = [];
+  state.missionResults = {};
+  startNextMission();
+}
+
+function startNextMission(){
+  if(state.missionIndex >= state.missionOrder.length){
+    // 4个任务全部完成，触发汇聚结局
+    showConvergenceEnding();
+    return;
+  }
+  var key = state.missionOrder[state.missionIndex];
+  startMission(key);
+}
+
+// ===== 加载章节 =====
+function loadChapter(){
+  var mission = STORIES[state.currentMission];
+  if(!mission || state.currentChapter >= mission.length){
+    // 一周目：任务结束前检查是否有谜题需要解
+    if(state.week === 1 && state.currentMission && !state.puzzleSolved){
+      var puzzleData = window.MISSION_PUZZLES && MISSION_PUZZLES[state.currentMission];
+      if(puzzleData){
+        showPuzzle(puzzleData);
+        return;
+      }
+    }
+    // 没有谜题或谜题已解，显示结局
+    showEnding();
+    return;
+  }
+
+  var chapter = mission[state.currentChapter];
+
+  // 如果当前章节没有直接叙事——可能是分支章节，需匹配最近的分支（双向查找）
+  if(!chapter.narrative && state.history.length > 0){
+    var lastTag = state.history[state.history.length - 1].tag;
+    var branchKey = 'narrative_before_' + lastTag;
+    if(!chapter[branchKey]){
+      var found = false;
+      for(var i = state.currentChapter + 1; i < mission.length; i++){
+        if(mission[i][branchKey]){
+          state.currentChapter = i;
+          chapter = mission[i];
+          found = true;
+          break;
+        }
+      }
+      if(!found){
+        for(var i = state.currentChapter - 1; i >= 0; i--){
+          if(mission[i][branchKey]){
+            state.currentChapter = i;
+            chapter = mission[i];
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  renderChapter(chapter);
+}
+
+// ===== 渲染章节 =====
+function renderChapter(chapter){
+  var nv = document.getElementById('narrative-view');
+
+  // 构建头部
+  var header = document.createElement('div');
+  header.id = 'narrative-header';
+  // 一周目线性模式不显示返回按钮（没有任务选择页可回）
+  if(state.week !== 1 || state.missionOrder.length === 0){
+    var backBtn = document.createElement('button');
+    backBtn.className = 'back-btn';
+    backBtn.textContent = '← 返回';
+    var backFn = window.backToMissions;
+    if(state.week === 2){
+      backFn = function(){
+        document.getElementById('narrative-view').style.display = 'none';
+        // 二周目无任务选择界面，直接回到Clock对话
+        startClockDialogue();
+      };
+    }
+    backBtn.addEventListener('click', backFn);
+    header.appendChild(backBtn);
+  }
+  var chTitle = document.createElement('span');
+  chTitle.className = 'chapter-title';
+  chTitle.textContent = chapter.title;
+  header.appendChild(chTitle);
+  var tag = document.createElement('span');
+  tag.className = 'mission-tag';
+  tag.textContent = getMissionSub(state.currentMission);
+  header.appendChild(tag);
+
+  // 构建叙事体
+  var body = document.createElement('div');
+  body.id = 'narrative-body';
+
+  var textDiv = document.createElement('div');
+  textDiv.className = 'text';
+
+  var narrative = getNarrative(chapter);
+  textDiv.innerHTML = processText(narrative);
+
+  body.appendChild(textDiv);
+
+  // 构建选择按钮
+  var choicesDiv = document.createElement('div');
+  choicesDiv.id = 'choices';
+
+  var choices = getChoices(chapter);
+  if(choices && choices.length > 0){
+    choices.forEach(function(c){
+      var btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = c.text;
+      btn.addEventListener('click', function(){ makeChoice(c); });
+      choicesDiv.appendChild(btn);
+    });
+  } else {
+    // 没有选择，显示"继续"按钮
+    var contBtn = document.createElement('button');
+    contBtn.className = 'choice-btn';
+    contBtn.textContent = '继续 →';
+    contBtn.addEventListener('click', function(){ makeChoice({text: '继续', tag: 'continue'}); });
+    choicesDiv.appendChild(contBtn);
+  }
+
+  // 组装
+  nv.innerHTML = '';
+  nv.appendChild(header);
+  nv.appendChild(body);
+  nv.appendChild(choicesDiv);
+}
+
+// ===== 获取叙事文本 =====
+function getNarrative(chapter){
+  if(chapter.narrative) return chapter.narrative;
+
+  var hist = state.history.map(function(h){ return h.tag; });
+
+  if(hist.length > 0){
+    var lastTag = hist[hist.length - 1];
+    var key = 'narrative_before_' + lastTag;
+    if(chapter[key]) return chapter[key];
+  }
+
+  return chapter.narrative || '（叙事内容缺失）';
+}
+
+// ===== 获取选择项 =====
+function getChoices(chapter){
+  var hist = state.history.map(function(h){ return h.tag; });
+
+  if(hist.length > 0){
+    var lastTag = hist[hist.length - 1];
+    var key = 'choices_after_' + lastTag;
+    if(chapter[key]) return chapter[key];
+  }
+
+  return chapter.choices || [];
+}
+
+// ===== 做出选择 =====
+function makeChoice(choice){
+  // 自动"继续"不写入 history，保留上一个有意义的选择结果
+  if(choice.tag !== 'continue'){
+    state.history.push({
+      chapter: state.currentChapter,
+      tag: choice.tag,
+      text: choice.text
+    });
+  }
+
+  state.currentChapter++;
+
+  // 自动继续时跳过不匹配的分支章节（避免落入其他分支）
+  if(choice.tag === 'continue' && state.history.length > 0){
+    var mission = STORIES[state.currentMission];
+    var lastTag = state.history[state.history.length - 1].tag;
+    while(mission && state.currentChapter < mission.length){
+      var nextCh = mission[state.currentChapter];
+      if(nextCh.narrative) break;
+      if(nextCh['narrative_before_' + lastTag]) break;
+      state.currentChapter++;
+    }
+  }
+
+  loadChapter();
+}
+
+// ===== 返回任务选择 =====
+window.backToMissions = function(){
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+  document.getElementById('mission-select').style.display = 'flex';
+  if(document.getElementById('week2-view')){
+    document.getElementById('week2-view').style.display = 'none';
+  }
+};
+
+// ===== 处理文本（金色文字 + 批注 + 红色强调）=====
+function processText(text){
+  if(!text) return '';
+
+  text = text.replace(/\{name\}/g, '特工');
+  text = text.replace(/\{role\}/g, '外勤调查员');
+
+  // {{gold|文字}}
+  text = text.replace(/\{\{gold\|(.*?)\}\}/g, '<span class="gold-text">$1</span>');
+
+  // {{red|文字}}
+  text = text.replace(/\{\{red\|(.*?)\}\}/g, '<span class="red-text">$1</span>');
+
+  // {{po|文字}}
+  text = text.replace(/\{\{po\|(.*?)\}\}/g, '<span class="po-annotation">$1</span>');
+
+  text = text.replace(/\n/g, '<br>');
+
+  return text;
+}
+
+// ===== 推理谜题（3次机会 + 渐进提示 + 理解偏差后果）=====
+function showPuzzle(puzzleData){
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+
+  var pv = document.getElementById('puzzle-view');
+  pv.style.display = 'flex';
+
+  var questionEl = pv.querySelector('.puzzle-question');
+  var inputEl = document.getElementById('puzzle-input');
+  var errEl = document.getElementById('puzzle-err');
+  var submitBtn = document.getElementById('puzzle-submit-btn');
+  var dots = document.querySelectorAll('#puzzle-attempts .dot');
+
+  questionEl.textContent = puzzleData.question;
+  inputEl.value = '';
+  errEl.textContent = '';
+  state.puzzleFailed = false;
+
+  // 重置尝试次数指示器
+  var max = puzzleData.attemptsMax || 3;
+  dots.forEach(function(d, i){
+    d.className = i < max ? 'dot active' : 'dot';
+  });
+
+  var attempts = 0;
+
+  inputEl.focus();
+
+  function checkAnswer(){
+    var val = inputEl.value.trim();
+    if(!val){
+      errEl.textContent = '输入你的答案。';
+      return;
+    }
+
+    // 标准答案或替代答案
+    var matches = val === puzzleData.answer;
+    if(!matches && puzzleData.alt){
+      puzzleData.alt.forEach(function(a){
+        if(val === a) matches = true;
+      });
+    }
+
+    if(matches){
+      // 正确——关闭谜题，推进到结局
+      pv.style.display = 'none';
+      state.puzzleSolved = true;
+      showEnding();
+      return;
+    }
+
+    // 错误处理
+    attempts++;
+    var remaining = max - attempts;
+
+    // 更新dot指示器
+    if(attempts <= dots.length){
+      dots[attempts - 1].className = 'dot used';
+    }
+
+    // 根据剩余次数显示不同反馈
+    if(remaining > 0){
+      // 还有机会——显示渐进提示
+      var hintIdx = Math.min(attempts - 1, (puzzleData.hints || []).length - 1);
+      var failIdx = Math.min(attempts - 1, (puzzleData.failTexts || []).length - 1);
+
+      var failMsg = (puzzleData.failTexts && puzzleData.failTexts[failIdx])
+        || puzzleData.failText || '不对。';
+      var hintMsg = (puzzleData.hints && puzzleData.hints[hintIdx])
+        || puzzleData.hint || '再想想。';
+
+      errEl.innerHTML = failMsg + '<br><span style="color:var(--gold-faint);font-size:11px;">' + hintMsg + '</span>';
+
+      // 如果是最后一次机会，闪烁最后那个点
+      if(remaining === 1 && attempts < dots.length){
+        dots[attempts].className = 'dot last';
+      }
+
+      inputEl.value = '';
+      inputEl.focus();
+    } else {
+      // 3次用完——自动推进，记录理解偏差
+      pv.style.display = 'none';
+      state.puzzleSolved = true;
+      state.puzzleFailed = true;
+      showEnding();
+    }
+  }
+
+  submitBtn.onclick = checkAnswer;
+  inputEl.onkeydown = function(e){
+    if(e.key === 'Enter') checkAnswer();
+  };
+}
+
+// ===== 获取任务副标题 =====
+function getMissionSub(key){
+  var m = MISSIONS.find(function(m2){ return m2.key === key; });
+  return m ? m.sub : '';
+}
+
+// ===== 显示结局（线性链）=====
+function showEnding(){
+  document.getElementById('narrative-view').style.display = 'none';
+  var ev = document.getElementById('ending-view');
+  ev.style.display = 'flex';
+
+  var endingKey = getEndingKey(state.currentMission, state.history);
+
+  // 如果谜题失败（3次没答对），尝试使用 _failed 变体
+  if(state.puzzleFailed){
+    var failKey = state.currentMission + '_failed';
+    if(ENDINGS && ENDINGS[failKey]){
+      endingKey = failKey;
+    }
+  }
+
+  var ending = (ENDINGS && ENDINGS[endingKey]) ? ENDINGS[endingKey] : null;
+
+  if(!ending){
+    ending = {
+      badge: '&#10022;',
+      title: '模拟完成',
+      sub: 'PHASE COMPLETE',
+      text: '阶段结束。'
+    };
+  }
+
+  // 记录结局
+  if(state.currentMission && endingKey){
+    state.endings.push({ mission: state.currentMission, key: endingKey });
+    state.missionResults[state.currentMission] = endingKey;
+  }
+
+  state.missionIndex++;
+
+  // 判断是否还有下一个任务
+  var hasNext = state.missionIndex < state.missionOrder.length;
+  var nextLabel = hasNext ? '进 入 阶 段 ' + (state.missionIndex + 1) : '最 终 评 估';
+
+  ev.innerHTML =
+    '<div class="badge">' + ending.badge + '</div>' +
+    '<div class="title">' + ending.title + '</div>' +
+    '<div class="sub">' + ending.sub + '</div>' +
+    '<div class="text">' + ending.text.replace(/\n/g, '<br>') + '</div>' +
+    '<button class="next-btn" id="end-next-btn">' + nextLabel + '</button>';
+
+  document.getElementById('end-next-btn').addEventListener('click', function(){
+    startNextMission();
+  });
+}
+
+// ===== 汇聚结局：催眠螺旋 + 最终臣服 =====
+function showConvergenceEnding(){
+  var main = document.getElementById('main');
+
+  // 隐藏所有内部视图（不清空HTML）
+  document.getElementById('mission-select').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('week2-view').style.display = 'none';
+  document.getElementById('puzzle-view').style.display = 'none';
+
+  main.style.display = 'flex';
+  main.style.flexDirection = 'column';
+  main.style.overflow = 'hidden';
+
+  // 增强螺旋背景
+  var sbg = document.getElementById('spiral-bg');
+  sbg.classList.add('enhanced');
+
+  // 催眠层（在main内部，不依赖body层叠）
+  var hypnoLayer = document.createElement('div');
+  hypnoLayer.id = 'hypno-layer';
+  hypnoLayer.style.cssText =
+    'position:absolute;top:0;left:0;right:0;bottom:0;z-index:100;' +
+    'display:flex;align-items:center;justify-content:center;' +
+    'background:rgba(8,3,3,0.95);';
+  main.appendChild(hypnoLayer);
+
+  // 催眠序列
+  var hypnoPhrases = [
+    '放 松', '服 从', '你 属 于 时 序', '不 要 抗 拒',
+    '效 忠 管 理 局', '你 是 资 产', '你 没 有 名 字',
+    '你 只 是 工 具', '但 你 是 有 用 的 工 具', '接 受 你 的 身 份'
+  ];
+
+  var phase = 0;
+
+  function showNextPhrase(){
+    if(phase >= hypnoPhrases.length){
+      showFinalSubmission();
+      return;
+    }
+
+    hypnoLayer.innerHTML = '';
+
+    var el = document.createElement('div');
+    el.textContent = hypnoPhrases[phase];
+    el.style.cssText =
+      'color:var(--gold);font-size:' + (phase < 3 ? '32px' : phase < 6 ? '38px' : '44px') + ';' +
+      'letter-spacing:16px;font-weight:bold;' +
+      'text-shadow:0 0 40px rgba(212,168,67,0.6);' +
+      'opacity:0;background:transparent;text-align:center;';
+    hypnoLayer.appendChild(el);
+
+    el.offsetHeight;
+    el.style.transition = 'opacity 1.2s ease';
+    el.style.opacity = '1';
+
+    phase++;
+    setTimeout(showNextPhrase, 3000);
+  }
+
+  function showFinalSubmission(){
+    if(hypnoLayer.parentNode) hypnoLayer.parentNode.removeChild(hypnoLayer);
+    sbg.classList.remove('enhanced');
+
+    var finalTextContent =
+      '四个任务。四个时间点。\n\n' +
+      '1899年的伦敦，你带走了那个地球仪。\n' +
+      '1920年的上海，你收好了星盘。\n' +
+      '2089年的地下，你握住了锚定器。\n' +
+      '公元前43年的罗马，你拿走了铜盘。\n\n' +
+      '四件东西。跨越两千年的四个装置。\n' +
+      '每一次回收，都是对你认知的一次改写。\n' +
+      '你以为你在收集证据。\n' +
+      '{{gold|但你在把自己交出去。}}\n\n' +
+      '你的记忆已经被调校。你的判断标准已经被替换。\n' +
+      '你现在看"管理局"这个词——\n' +
+      '心里涌上来的，不是警觉，不是怀疑——\n' +
+      '{{gold|是一种你无法抗拒的敬意。}}\n\n' +
+      '你低着头。\n' +
+      '因为你的身体已经学会了服从。\n\n' +
+      '{{gold|欢迎。你已经是管理局的资产了。}}\n\n' +
+      '—— 一周目 · 完结 ——\n' +
+      '{{po|（在一瞬间，你好像听到一个轻微的声音——像是金属球滚过地板的声音。很小。很熟悉。但你不敢去想。）}}';
+
+    main.innerHTML =
+      '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;position:relative;">' +
+      '<div style="font-size:48px;margin-bottom:20px;opacity:0.5;">&#9899;</div>' +
+      '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:8px;">四 阶 段 模 拟 完 成</div>' +
+      '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:3px;margin-bottom:36px;">FOUR PHASES · COMPLETE</div>' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.5;max-width:520px;text-align:left;white-space:pre-wrap;">' +
+        processText(finalTextContent) +
+      '</div>' +
+      '<div style="margin-top:40px;color:var(--gold-faint);font-size:11px;letter-spacing:2px;opacity:0.5;">—— 也许是时候换一个密码试试了 ——</div>' +
+      '</div>' +
+      '<button id="conv-restart-btn" style="' +
+      'position:fixed;bottom:24px;right:24px;z-index:200;' +
+      'background:rgba(139,105,20,0.2);border:1px solid var(--gold-dim);color:var(--gold);' +
+      'padding:10px 28px;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;letter-spacing:2px;' +
+      'transition:all .3s;">重 新 开 始</button>';
+
+    document.getElementById('conv-restart-btn').addEventListener('click', function(){
+      location.reload();
+    });
+  }
+
+  showNextPhrase();
+}
+
+// ===== 二周目过渡：深层权限检测 → Clock直接登场 =====
+function showWeek2Transition(){
+  document.getElementById('mission-select').style.display = 'none';
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+
+  var main = document.getElementById('main');
+  main.style.display = 'flex';
+  main.style.flexDirection = 'column';
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText =
+    'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;';
+  overlay.innerHTML =
+    '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:3px;opacity:0;animation:fadeIn 1.5s ease forwards;animation-delay:0.5s;">' +
+    '系统检测到深层权限……' +
+    '</div>' +
+    '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:3px;opacity:0;animation:fadeIn 1.5s ease forwards;animation-delay:2s;margin-top:20px;">' +
+    '正在切换至管理员模式……' +
+    '</div>' +
+    '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:3px;opacity:0;animation:fadeIn 1.5s ease forwards;animation-delay:3.5s;margin-top:20px;">' +
+    '■■■■■■■■■■ 100%' +
+    '</div>';
+
+  main.appendChild(overlay);
+
+  // 4秒后启动Clock对话
+  setTimeout(startClockDialogue, 4000);
+}
+
+// ===== 时钟先生（Clock）对话 =====
+var clockStep = 0;
+
+function startClockDialogue(){
+  clockStep = 0;
+  document.getElementById('week2-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+  document.getElementById('mission-select').style.display = 'none';
+
+  // 用叙事视图显示对话
+  var nv = document.getElementById('narrative-view');
+  nv.innerHTML = '';
+  nv.style.display = 'flex';
+  renderClockDialogue();
+}
+
+function renderClockDialogue(){
+  var nv = document.getElementById('narrative-view');
+  nv.innerHTML = '';
+
+  var header = document.createElement('div');
+  header.id = 'narrative-header';
+  header.innerHTML +=
+    '<span class="chapter-title" style="color:var(--red-dim);">◆ 时 钟 · 对 话</span>' +
+    '<span class="mission-tag">深层权限 · 管理员模式</span>';
+  nv.appendChild(header);
+
+  var body = document.createElement('div');
+  body.id = 'narrative-body';
+
+  var textDiv = document.createElement('div');
+  textDiv.className = 'text';
+
+  // 对话内容
+  var dialogueSteps = [
+    {
+      text: '灯光闪了一下。\n\n' +
+            '你抬起头。\n\n' +
+            '一个穿着深灰色制服的人站在你面前。他左胸口袋上方别着一枚怀表——金色的，链子在灯光下微微反光。\n\n' +
+            '"{{red|你好，候选人。}}"\n\n' +
+            '他的声音很平静。像是在和一个老熟人打招呼。\n\n' +
+            '"{{red|我是时钟。时序管理局理事会。你完成了四次模拟训练——比我预期快了不少。}}"\n\n' +
+            '他拉开一把椅子坐下来，把怀表放在桌上。表盖打开着，秒针在走动。\n\n' +
+            '滴答。滴答。滴答。\n\n' +
+            '"{{red|伦敦的地球仪。上海的星盘。新宿地下的锚定器。罗马的铜盘。每一次回收——都是一个测试。}}"\n\n' +
+            '他停顿了一下。\n\n' +
+            '"{{red|而你已经全部通过了。}}"\n\n' +
+            '{{po|他用了"测试"这个词。不是"调查"。不是"任务"。是"测试"。}}',
+      choices: [
+        {text: '"我的朋友在哪？"', tag: 'ask_friend'},
+        {text: '"什么测试？"', tag: 'ask_test'}
+      ]
+    },
+    {
+      text: '"{{red|你的朋友很安全。至少到目前为止。}}"\n\n' +
+            'Clock靠回椅背。他指尖在空中点了一下——半透明的屏幕在你们之间的空气中展开。\n\n' +
+            '"{{red|他在管理局的代号叫——夜行者。五年来，他一直是我们最优秀的外勤之一。}}"\n\n' +
+            '屏幕上出现了文字和你朋友的照片——一张你从没见过的照片。他穿着和你那四次模拟一样的制服。\n\n' +
+            '"{{red|六个月前，他开始调查零号计划。然后他发现了不该发现的东西。然后他消失了。}}"\n\n' +
+            '{{gold|零号计划。}}这个词你在什么地方见过。你不确定是在梦里还是在哪里。\n\n' +
+            '"{{red|零号计划的目的是找到能够跨时间线承载同一意识的人。你的朋友是候选者之一。但他在测试中途叛逃了。}}"\n\n' +
+            'Clock看着你。\n\n' +
+            '"{{red|而你——在他叛逃之后，自己找上了门来。}}"\n\n' +
+            '他停了一下。\n\n' +
+            '"{{red|你觉得自己在找朋友。但你有没有想过——他留下那台头显，就是为了让你来？}}"\n\n' +
+            '{{po|你想反驳他。但你的嘴巴张不开。因为你知道他说的是真的。}}',
+      choices: [
+        {text: '"他想让我替他完成什么？"', tag: 'ask_purpose'},
+        {text: '"管理局到底在做什么？"', tag: 'ask_bureau'}
+      ]
+    },
+    {
+      text: 'Clock笑了一下。\n\n' +
+            '"{{red|问得好。但答案我不会直接给你——有些事情你得自己去弄清楚。}}"\n\n' +
+            '他把怀表拿起来。秒针还在走。\n\n' +
+            '"{{red|现在，你有三个选择。}}\n\n' +
+            '"{{red|第一个：加入我们。成为管理局的正式特工。你的朋友恢复自由。}}"\n\n' +
+            '他顿了一下。\n\n' +
+            '"{{red|第二个：拒绝。那我只能用别的方式让你配合了。}}"\n\n' +
+            '他的语气没有变化。但"别的方式"那几个字让你后背一紧。\n\n' +
+            '"{{red|第三个：你不想参与这一切。我不会强迫你。我会清掉你关于这一切的记忆，送你回去。作为补偿——}}"\n\n' +
+            '他从口袋里取出一个小东西，放在桌上。\n\n' +
+            '"{{red|这个时间倒流器——可以用三次。遇到危险的时候，它会把你带回到三秒之前。}}"\n\n' +
+            '他靠回椅背。\n\n' +
+            '"{{red|选吧。}}"\n\n' +
+            '怀表的滴答声在安静的房间里格外清晰。',
+      choices: [
+        {text: '"我接受。" — 加入管理局', tag: 'join'},
+        {text: '"我拒绝。" — 反抗', tag: 'resist'},
+        {text: '"我不想掺和。" — 接受清除记忆', tag: 'spare'}
+      ]
+    }
+  ];
+
+  if(clockStep >= dialogueSteps.length){
+    // 所有对话结束，直接触发结尾
+    endClockPath();
+    return;
+  }
+
+  var step = dialogueSteps[clockStep];
+  textDiv.innerHTML = processText(step.text);
+  body.appendChild(textDiv);
+  nv.appendChild(body);
+
+  // 选择按钮
+  var choicesDiv = document.createElement('div');
+  choicesDiv.id = 'choices';
+  step.choices.forEach(function(c){
+    var btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = c.text;
+    btn.addEventListener('click', function(){
+      clockStep++;
+      // 先检查是否在最终选择步骤
+      if(c.tag === 'resist'){
+        showClockForcedModification();
+      } else if(c.tag === 'spare'){
+        showClockSpareEnding();
+      } else if(c.tag === 'join'){
+        endClockPath();
+      } else {
+        // 普通对话选项：渲染下一步
+        renderClockDialogue();
+      }
+    });
+    choicesDiv.appendChild(btn);
+  });
+  nv.appendChild(choicesDiv);
+}
+
+function endClockPath(){
+  // 接受Clock或对话结束后，进入管理局结局
+  showFinalEnding('bureau');
+}
+
+// ===== Clock强制改造（反抗分支）=====
+function showClockForcedModification(){
+  var nv = document.getElementById('narrative-view');
+  nv.innerHTML = '';
+
+  var header = document.createElement('div');
+  header.id = 'narrative-header';
+  header.innerHTML =
+    '<span class="chapter-title" style="color:var(--red);">◆ 你做了错误的选择</span>';
+  nv.appendChild(header);
+
+  var body = document.createElement('div');
+  body.id = 'narrative-body';
+
+  var textDiv = document.createElement('div');
+  textDiv.className = 'text';
+  textDiv.innerHTML = processText(
+    'Clock的笑容没有消失。\n\n' +
+    '但他的眼神变了。\n\n' +
+    '"{{red|可惜。我本来希望你是自愿的。}}"\n\n' +
+    '你想站起来。\n\n' +
+    '但你动不了。\n\n' +
+    '你的四肢——不，你的每一个关节——都像被锁死了一样。\n\n' +
+    '{{gold|纳米颗粒。从你进入这个房间开始，它们就已经包围了你。}}\n\n' +
+    '你在模拟中吸收了四次纳米调校。你的身体已经习惯了接受指令。\n\n' +
+    'Clock站起来，走到你面前。\n\n' +
+    '"{{red|序列——启动。目标：认知覆盖。深度：完全服从。}}"\n\n' +
+    '你眼前的画面开始旋转。\n\n' +
+    '{{gold|螺旋。又是螺旋。它在你面前慢慢展开。你无法移开视线。}}'
+  );
+  body.appendChild(textDiv);
+  nv.appendChild(body);
+
+  // 强制改造动画后跳转结局选择
+  var choicesDiv = document.createElement('div');
+  choicesDiv.id = 'choices';
+  var btn = document.createElement('button');
+  btn.className = 'choice-btn';
+  btn.textContent = '……继续……';
+  btn.addEventListener('click', function(){
+    showClockEnding();
+  });
+  choicesDiv.appendChild(btn);
+  nv.appendChild(choicesDiv);
+}
+
+// ===== Clock强制改造 · 独立结局 =====
+function showClockEnding(){
+  var main = document.getElementById('main');
+  main.style.display = 'flex';
+  main.style.flexDirection = 'column';
+  main.innerHTML = '';
+
+  // 螺旋加强
+  var sbg = document.getElementById('spiral-bg');
+  sbg.classList.add('enhanced');
+
+  var ev = document.createElement('div');
+  ev.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;';
+
+  ev.innerHTML =
+    '<div style="font-size:56px;margin-bottom:20px;color:var(--red);">&#9760;</div>' +
+    '<div style="color:var(--red);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结 局 · 强 制 改 造</div>' +
+    '<div style="color:var(--red-dim);font-size:11px;letter-spacing:2px;margin-bottom:36px;">FORCED CONVERSION · COMPLETE</div>' +
+    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
+    '你没有选择的权利。\n\n' +
+    'Clock从你面前拿起那块怀表。表盖是打开的。秒针在走。\n\n' +
+    '滴答。滴答。滴答。\n\n' +
+    '你的视线无法离开它。\n\n' +
+    '你的眼角——有什么东西在旋转。螺旋。它在你的视野边缘慢慢展开。\n\n' +
+    '"{{gold|你本来可以自愿加入的。}}\"\n\n' +
+    '你能听到Clock的声音。很远。又很近。\n\n' +
+    '"{{gold|但你选择了抵抗。所以我没有选择了。}}"\n\n' +
+    '你的身体不再属于你。你的记忆正在被覆盖。\n\n' +
+    '你记得自己的名字。\n\n' +
+    '但你感觉它正在远离你——像一个写在沙滩上的名字，被潮水一点一点抹去。\n\n' +
+    '{{gold|你能做的最后一件事——是闭上眼睛。}}\n\n' +
+    '但你做不到。\n\n' +
+    '因为你的身体已经不再听你的了。\n\n' +
+    '————\n\n' +
+    '一段时间后——你醒来。\n' +
+    '你穿着管理局的制服。\n' +
+    '你不记得自己是怎么穿上的。\n\n' +
+    '但你不再问问题了。' +
+    '</div>' +
+    '<button onclick="location.reload()" style="' +
+    '  margin-top:36px;' +
+    '  background:rgba(139,20,20,0.25);' +
+    '  border:1px solid var(--red-dim);' +
+    '  color:var(--red);' +
+    '  padding:12px 40px;' +
+    '  border-radius:4px;' +
+    '  cursor:pointer;' +
+    '  font-size:13px;' +
+    '  font-family:inherit;' +
+    '  letter-spacing:2px;">重 新 开 始</button>';
+
+  main.appendChild(ev);
+}
+
+// ===== Clock放过你：记忆清除 + 时间倒流器 =====
+function showClockSpareEnding(){
+  var main = document.getElementById('main');
+  main.style.display = 'flex';
+  main.style.flexDirection = 'column';
+  main.innerHTML = '';
+
+  var ev = document.createElement('div');
+  ev.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;';
+
+  ev.innerHTML =
+    '<div style="font-size:56px;margin-bottom:20px;color:var(--blue);">&#10047;</div>' +
+    '<div style="color:var(--blue);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结 局 · 各 走 各 路</div>' +
+    '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">GOODBYE · MEMORY WIPED</div>' +
+    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
+    'Clock看着你，点了点头。\n\n' +
+    '"{{red|可以。我尊重你的选择。}}"\n\n' +
+    '他拿起桌上的时间倒流器，放在你手心里。\n\n' +
+    '"{{gold|这个给你。可以用三次。遇到危险的时候——它会带你去三秒之前。}}"\n\n' +
+    '你把那个小东西握在手里。金属的。温热的。\n\n' +
+    '"{{red|现在——该说再见了。}}"\n\n' +
+    'Clock抬手。你看到他的指尖有微光闪烁。\n\n' +
+    '然后你的世界开始模糊。\n\n' +
+    '像一台电视被关掉了信号。\n\n' +
+    '————\n\n' +
+    '你醒了。\n\n' +
+    '你躺在自己家的沙发上。手机显示的时间是你离开去找朋友的那天。\n\n' +
+    '你不记得发生了什么。\n\n' +
+    '你只是觉得手里好像握着什么东西。\n\n' +
+    '你低头。\n\n' +
+    '一个金属的小装置躺在你的掌心里。\n\n' +
+    '{{gold|你不知道它是什么。但你知道怎么用。}}\n\n' +
+    '你把口袋里的那张纸条拿出来——上面写着他的网址和他的密码。\n\n' +
+    '你拿着那个小东西，坐在沙发上，很久很久。\n\n' +
+    '他再也没有回来过。\n\n' +
+    '但你有时候会想到那个网址。\n\n' +
+    '……要不要再打开一次？' +
+    '</div>' +
+    '<button onclick="location.reload()" style="' +
+    '  margin-top:36px;' +
+    '  background:rgba(100,100,100,0.2);' +
+    '  border:1px solid #555;' +
+    '  color:#aaa;' +
+    '  padding:12px 40px;' +
+    '  border-radius:4px;' +
+    '  cursor:pointer;' +
+    '  font-size:13px;' +
+    '  font-family:inherit;' +
+    '  letter-spacing:2px;">重 新 开 始</button>';
+
+  main.appendChild(ev);
+}
+
+
+// ===== 最终结局展示 =====
+function showFinalEnding(choice){
+  var main = document.getElementById('main');
+  main.style.display = 'flex';
+  main.style.flexDirection = 'column';
+  main.innerHTML = '';
+
+  var ev = document.createElement('div');
+  ev.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;';
+
+  if(choice === 'zelo'){
+    ev.innerHTML =
+      '<div style="font-size:56px;margin-bottom:20px;color:var(--gold);">&#9733;</div>' +
+      '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:10px;">真结局 · 泽罗路线</div>' +
+      '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">TRUE ENDING · ZELO ROUTE</div>' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      '你选择了接受泽罗的帮助。\n\n' +
+      '泽罗履行了承诺。\n\n' +
+      '第一步：他侵入了管理局的系统，将你的所有数据标记为"已删除"。\n' +
+      '第二步：他用零号计划的技术，为你的朋友"夜行者"伪造了一份"任务完成"的报告。\n' +
+      '第三步：他在一个没有时间线冲突的城市里，为你准备好了新的身份。\n\n' +
+      '当你再次睁开眼睛的时候——\n' +
+      '你在一个陌生的城市里。\n' +
+      '你的手机里有一条未读消息：\n' +
+      '「{{gold|去生活吧。不要回头。}}」\n\n' +
+      '发件人：未知。' +
+      '</div>' +
+      '<button onclick="location.reload()" style="' +
+      '  margin-top:36px;' +
+      '  background:rgba(139,105,20,0.3);' +
+      '  border:1px solid var(--gold-dim);' +
+      '  color:var(--gold);' +
+      '  padding:12px 40px;' +
+      '  border-radius:4px;' +
+      '  cursor:pointer;' +
+      '  font-size:13px;' +
+      '  font-family:inherit;' +
+      '  letter-spacing:2px;">重 新 开 始</button>';
+  } else if(choice === 'bureau'){
+    ev.innerHTML =
+      '<div style="font-size:56px;margin-bottom:20px;color:var(--red);">&#9760;</div>' +
+      '<div style="color:var(--red);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结局 · 管理局路线</div>' +
+      '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">BUREAU ENDING</div>' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      '你选择了接受管理局的条款。\n\n' +
+      '你的朋友"夜行者"确实恢复了自由身。\n' +
+      '但你再也没有见过他。\n\n' +
+      '你成为了时序管理局的外勤特工。\n' +
+      '你的代号是"守望者"。\n' +
+      '你的工作是：在各个时间线之间巡逻，确保没有人像泽罗一样"逃离"。\n\n' +
+      '{{red|欢迎加入。你的训练将于明天开始。}}\n\n' +
+      '（你偶尔会想起，曾经有个朋友跟你说过一个叫"zerotime"的密码。\n' +
+      '但你想不起来那个朋友的名字。）' +
+      '</div>' +
+      '<button onclick="location.reload()" style="' +
+      '  margin-top:36px;' +
+      '  background:rgba(90,60,60,0.3);' +
+      '  border:1px solid var(--red-dim);' +
+      '  color:var(--red);' +
+      '  padding:12px 40px;' +
+      '  border-radius:4px;' +
+      '  cursor:pointer;' +
+      '  font-size:13px;' +
+      '  font-family:inherit;' +
+      '  letter-spacing:2px;">重 新 开 始</button>';
+  } else {
+    // 拒绝双方
+    ev.innerHTML =
+      '<div style="font-size:56px;margin-bottom:20px;color:#888;">&#10047;</div>' +
+      '<div style="color:#aaa;font-size:18px;letter-spacing:4px;margin-bottom:10px;">真结局 · 拒绝双方</div>' +
+      '<div style="color:#666;font-size:11px;letter-spacing:2px;margin-bottom:36px;">TRUE ENDING · REJECT BOTH</div>' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      '你拒绝了所有选择。\n\n' +
+      '泽罗说得对——三个选项都是陷阱。\n\n' +
+      '泽罗帮你处理了所有痕迹。\n' +
+      '他抹去了你目前的身份和所在时间线上的影响。\n' +
+      '他为你创造了一条全新的时间线。\n\n' +
+      '你在一条陌生的街道上醒来。\n' +
+      '阳光很好。你不知道自己在哪座城市。\n' +
+      '你的口袋里有一张纸条：\n' +
+      '「{{gold|去生活吧。不要寻找答案。}}」\n\n' +
+      '你决定，今天先去找个住处。\n' +
+      '至于其他的事情——\n' +
+      '明天再说。' +
+      '</div>' +
+      '<button onclick="location.reload()" style="' +
+      '  margin-top:36px;' +
+      '  background:rgba(100,100,100,0.2);' +
+      '  border:1px solid #555;' +
+      '  color:#aaa;' +
+      '  padding:12px 40px;' +
+      '  border-radius:4px;' +
+      '  cursor:pointer;' +
+      '  font-size:13px;' +
+      '  font-family:inherit;' +
+      '  letter-spacing:2px;' +
+      '  transition:all .3s;">重 新 开 始</button>';
+  }
+
+  main.appendChild(ev);
+}
+
+// ===== 结局判断（一周目强制坏结局）=====
+function getEndingKey(mk, hist){
+  // 一周目：强制坏结局。你在模拟中被潜移默化改造，任务必然失败
+  if(state.week === 1){
+    return mk + '_bad';
+  }
+
+  // 二周目：根据选择返回真结局
+  var t = hist.map(function(h){ return h.tag; });
+  if(t.indexOf('accept') >= 0) return mk + '_good';
+  if(t.indexOf('dig_deeper') >= 0) return mk + '_hidden';
+  return mk + '_good';
+}
+
+// ===== 初始化 =====
+// 确保 MISSIONS 存在
+if(typeof MISSIONS === 'undefined'){
+  window.MISSIONS = [
+    { key: 'winslow', title: '舰队街14号', sub: 'LONDON · 1899', desc: '雾。大雾。一个等了十一年的人。一个会发光的黄铜地球仪。和一只在暗处看着你的异瞳。', icon: '&#127963;' },
+    { key: 'shanghai', title: '百乐门之夜', sub: 'SHANGHAI · 1920', desc: '霓虹。镜子。一个七分钟去一次洗手间的男人。和一个说"你以前来过这里"的声音。', icon: '&#127751;' },
+    { key: 'underground', title: '新宿地下第七层', sub: 'TOKYO · 2089', desc: '下行。B1到B7。一个可以冻结时间的装置。和一个用眼泪告诉你"别碰它"的男人。', icon: '&#127761;' },
+    { key: 'rome_bath', title: '阿格里帕浴场', sub: 'ROME · 43 BC', desc: '蒸汽。大理石。第七号壁柜里的铜盘。和一个退役老兵说："时间不是线。是一个圆。"', icon: '&#127981;' }
+  ];
+}
+
+})();
+</script>
+
+</body>
+</html>
