@@ -2428,6 +2428,7 @@ function _osc(type, freq, gainVal, connectTo){
   g.gain.value = gainVal;
   o.connect(g);
   g.connect(connectTo || masterBGM);
+  o.start();
   bgmNodes.push(o, g);
   return o;
 }
