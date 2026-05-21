@@ -1294,21 +1294,21 @@ body[data-week="2"] #gate::before {
   </div>
   <div class="puzzle-err" id="puzzle-err"></div>
 </div>
+</div><!-- /main -->
 
-<!-- 场景探索·热点弹出 -->
+<!-- 场景探索·热点弹出（在main之外，避免innerHTML替换时销毁） -->
 <div id="hotspot-overlay">
   <div class="hotspot-title">▼ 你仔细看了看</div>
   <div class="hotspot-body" id="hotspot-body"></div>
   <button class="hotspot-close" id="hotspot-close-btn">关 闭</button>
 </div>
 
-<!-- 逃离关卡·身份验证 -->
+<!-- 逃离关卡·身份验证（在main之外，避免innerHTML替换时销毁） -->
 <div id="escape-quiz-view">
   <div class="quiz-title">深 层 权 限 验 证</div>
   <div class="quiz-sub">深层权限验证 · 身份确认</div>
   <div class="quiz-progress" id="quiz-progress"></div>
   <div id="quiz-content"></div>
-</div>
 </div>
 
 <!-- 页脚 -->
