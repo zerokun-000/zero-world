@@ -2388,15 +2388,14 @@ introBtn.addEventListener('click', function(){
   introPage.style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
   setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
-  // 在用户手势内创建 AudioContext，避免浏览器 autoplay 策略挂起
+  // 在用户手势内创建 AudioContext 并立即启动 BGM（移动端必须在手势内）
   if(!bgmCtx){
     try {
       bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(bgmCtx.state === 'suspended') bgmCtx.resume();
     } catch(e){}
   }
-  // 用户交互后启动BGM（门禁页用默认氛围音）
-  setTimeout(function(){ setBGMMode('default'); }, 200);
+  try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
+  setBGMMode('default');
 });
 
 // ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
