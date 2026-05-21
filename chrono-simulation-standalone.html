@@ -2778,6 +2778,12 @@ function enterReviewMode(quizType){
   quizEl.style.display = 'none';
   var nv = document.getElementById('narrative-view');
   nv.style.display = 'block';
+  // 修复回顾模式下无法滚动：CSS默认overflow:hidden + 无独立高度
+  nv.style.position = 'fixed';
+  nv.style.inset = '0';
+  nv.style.zIndex = '200';
+  nv.style.overflow = 'auto';
+  nv.style.padding = '16px 24px 80px';
   nv.scrollTop = 0;
 
   // 隐藏选择按钮（只是回顾，不需要点）
@@ -2804,6 +2810,12 @@ function exitReviewMode(){
   // 恢复故事界面原状
   var nv = document.getElementById('narrative-view');
   nv.style.display = 'none';
+  // 恢复回顾模式劫持的样式
+  nv.style.position = '';
+  nv.style.inset = '';
+  nv.style.zIndex = '';
+  nv.style.overflow = '';
+  nv.style.padding = '';
   var choices = document.getElementById('choices');
   if(choices) choices.style.display = '';
   var header = document.getElementById('narrative-header');
@@ -3125,7 +3137,14 @@ function showEnding(){
   if(ch) ch.style.display = '';
   reviewSave = null;
 
-  document.getElementById('narrative-view').style.display = 'none';
+  var nv = document.getElementById('narrative-view');
+  nv.style.display = 'none';
+  // 恢复回顾模式劫持的样式
+  nv.style.position = '';
+  nv.style.inset = '';
+  nv.style.zIndex = '';
+  nv.style.overflow = '';
+  nv.style.padding = '';
   var ev = document.getElementById('ending-view');
   ev.style.display = 'flex';
 
