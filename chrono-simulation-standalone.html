@@ -29,24 +29,75 @@ body {
   width: 100vw;
 }
 
-/* ===== 螺旋背景（Canvas动态生成，分辨率自适应）===== */
+/* ===== 时空粒子背景（纯CSS动画，零Canvas开销）===== */
 #spiral-bg {
   position: fixed; inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  /* CSS fallback：如果Canvas渲染失败，显示渐变 */
-  background: radial-gradient(ellipse at 50% 50%, rgba(212,168,67,0.05) 0%, transparent 70%);
+  background: #070a0e;
 }
-#spiral-bg {
-  /* 圆形裁剪，避免矩形边缘在旋转时暴露 */
+
+.bg-orb {
+  position: absolute;
   border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  will-change: transform;
 }
-#spiral-bg canvas {
-  position: absolute; inset: 0;
-  width: 100%;
-  height: 100%;
+
+.bg-orb-1 {
+  width: 500px; height: 500px;
+  left: 15%; top: 30%;
+  background: radial-gradient(circle, rgba(212,168,67,0.9) 0%, transparent 70%);
+  animation: orb-float-1 32s ease-in-out infinite;
 }
+.bg-orb-2 {
+  width: 350px; height: 350px;
+  right: 20%; top: 45%;
+  background: radial-gradient(circle, rgba(212,168,67,0.6) 0%, transparent 65%);
+  animation: orb-float-2 24s ease-in-out infinite;
+}
+.bg-orb-3 {
+  width: 200px; height: 200px;
+  left: 55%; top: 70%;
+  background: radial-gradient(circle, rgba(168,140,60,0.5) 0%, transparent 60%);
+  animation: orb-float-3 18s ease-in-out infinite;
+}
+
+@keyframes orb-float-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(40px, -25px) scale(1.05); }
+  50%  { transform: translate(-20px, 35px) scale(0.95); }
+  75%  { transform: translate(-35px, -15px) scale(1.02); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes orb-float-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(-30px, 20px) scale(0.97); }
+  50%  { transform: translate(25px, -30px) scale(1.04); }
+  75%  { transform: translate(-15px, -10px) scale(1.01); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes orb-float-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(20px, 15px) scale(1.08); }
+  66%  { transform: translate(-25px, -20px) scale(0.93); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* 模式切换 */
+#spiral-bg[data-mode="week2"] .bg-orb { opacity: 0.08; filter: blur(100px); }
+#spiral-bg[data-mode="week2"] .bg-orb-3 { opacity: 0.2; background: radial-gradient(circle, rgba(192,80,80,0.5) 0%, transparent 60%); }
+#spiral-bg[data-mode="week2"] .bg-orb-1 { animation-duration: 48s; }
+#spiral-bg[data-mode="week2"] .bg-orb-2 { animation-duration: 36s; }
+#spiral-bg[data-mode="week2"] .bg-orb-3 { animation-duration: 28s; }
+
+#spiral-bg[data-mode="enhanced"] .bg-orb { opacity: 0.18; filter: blur(60px); }
+#spiral-bg[data-mode="enhanced"] .bg-orb-3 { opacity: 0.25; background: radial-gradient(circle, rgba(212,100,80,0.6) 0%, transparent 55%); }
+#spiral-bg[data-mode="enhanced"] .bg-orb-1 { animation-duration: 18s; }
+#spiral-bg[data-mode="enhanced"] .bg-orb-2 { animation-duration: 14s; }
+#spiral-bg[data-mode="enhanced"] .bg-orb-3 { animation-duration: 10s; }
 
 /* ===== 引导页 ===== */
 #intro-page {
@@ -601,8 +652,7 @@ body[data-week="2"] .topbar {
   background: linear-gradient(90deg, var(--gold), var(--red-dim), var(--gold));
 }
 body[data-week="2"] #spiral-bg {
-  opacity: 0.012;
-  background: conic-gradient(from 0deg, transparent, var(--gold-faint), transparent, var(--red-dim), transparent);
+  background: #08060c;
 }
 body[data-week="2"] #main {
   border-color: var(--border);
@@ -1220,7 +1270,9 @@ body[data-week="2"] #gate::before {
 
 <!-- 螺旋背景 -->
 <div id="spiral-bg">
-  <canvas id="spiral-canvas"></canvas>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
 </div>
 
 <!-- 引导页 -->
@@ -2177,98 +2229,12 @@ ENDINGS = {
 (function(){
 'use strict';
 
-// ===== 高分辨率螺旋生成（Canvas动态渲染）=====
-var spiralAngle = 0;
-var spiralSpeed = 0.0006;     // 基础速度（≈90s一圈）
-var spiralOpacity = 0.35;
-var spiralAnimId = null;
-// 缓存画布尺寸，避免每帧getBoundingClientRect + 重置canvas触发回流
-var _sw = 0, _sh = 0, _sdpr = 1, _scx = 0, _scy = 0, _smaxR = 0;
-
-function spiralResize(){
-  var canvas = document.getElementById('spiral-canvas');
-  if(!canvas) return;
-  var dpr = window.devicePixelRatio || 1;
-  var rect = canvas.getBoundingClientRect();
-  var w = rect.width, h = rect.height;
-  if(w < 10 || h < 10) return;
-  if(w === _sw && h === _sh && dpr === _sdpr) return; // 没变，跳过
-  _sw = w; _sh = h; _sdpr = dpr;
-  canvas.width = Math.round(w * dpr);
-  canvas.height = Math.round(h * dpr);
-  _scx = w / 2; _scy = h / 2;
-  _smaxR = Math.sqrt(_scx*_scx + _scy*_scy) + 100;
-}
-
-function generateSpiral(rotationOffset){
-  spiralResize();
-  var canvas = document.getElementById('spiral-canvas');
-  if(!canvas || _sw < 10) return;
-  var ctx = canvas.getContext('2d');
-  if(!ctx) return;
-  var w = _sw, cx = _scx, cy = _scy, maxR = _smaxR, dpr = _sdpr;
-
-  // 用setTransform替代scale，避免累积；clearRect替代canvas.width=重置
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, _sh);
-
-  var spacing = 7;
-  var arcAngle = Math.PI * 1.7;
-  var rotationStep = 0.12;
-  var offset = rotationOffset || 0;
-
-  ctx.strokeStyle = 'rgba(212, 168, 67, ' + spiralOpacity + ')';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  for(var r = 12; r < maxR; r += spacing){
-    ctx.arc(cx, cy, r, r * rotationStep + offset, r * rotationStep + offset + arcAngle);
-  }
-  ctx.stroke();
-
-  // 第二层：更细更淡的交叉螺旋线
-  ctx.strokeStyle = 'rgba(212, 168, 67, ' + (spiralOpacity * 0.35) + ')';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath();
-  for(var r2 = 16; r2 < maxR; r2 += spacing * 1.5){
-    ctx.arc(cx, cy, r2, r2 * 0.08 + Math.PI + offset, r2 * 0.08 + Math.PI + offset + arcAngle * 0.7);
-  }
-  ctx.stroke();
-}
-
-function spiralFrame(){
-  spiralAngle += spiralSpeed;
-  generateSpiral(spiralAngle);
-  spiralAnimId = requestAnimationFrame(spiralFrame);
-}
-
-// 初始化螺旋 + 窗口大小变化时重新生成
-function initSpiral(){
-  if(spiralAnimId) return;
-  spiralResize();
-  generateSpiral(spiralAngle);
-  spiralAnimId = requestAnimationFrame(spiralFrame);
-  var resizeTimer;
-  window.addEventListener('resize', function(){
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function(){
-      spiralResize();
-      generateSpiral(spiralAngle);
-    }, 200);
-  });
-}
-
-// 切换螺旋速度/透明度（二周目/强化模式）
-function setSpiralMode(mode){
-  if(mode === 'week2'){
-    spiralSpeed = 0.0003;   // 慢一半 ≈180s
-    spiralOpacity = 0.35;
-  } else if(mode === 'enhanced'){
-    spiralSpeed = 0.0027;   // 快 ≈20s
-    spiralOpacity = 0.5;
-  } else {
-    spiralSpeed = 0.0006;   // 默认 ≈90s
-    spiralOpacity = 0.35;
-  }
+// ===== 背景模式切换（CSS data-mode，零JS动画开销）=====
+function setBgMode(mode){
+  var bg = document.getElementById('spiral-bg');
+  if(!bg) return;
+  if(!mode || mode === 'default'){ bg.removeAttribute('data-mode'); }
+  else { bg.dataset.mode = mode; }
 }
 
 // ===== 状态 =====
@@ -2315,7 +2281,7 @@ function tryUnlock(){
     gate.style.display = 'none';
     document.body.removeAttribute('data-week');
     document.getElementById('spiral-bg').classList.remove('week2');
-    setSpiralMode('default');
+    setBgMode('default');
     document.getElementById('main').style.display = 'flex';
     document.getElementById('topbar-text').textContent = '时序管理局 · 招募测试';
     startSequence();
@@ -2325,7 +2291,7 @@ function tryUnlock(){
     gate.style.display = 'none';
     document.body.setAttribute('data-week', '2');
     document.getElementById('spiral-bg').classList.add('week2');
-    setSpiralMode('week2');
+    setBgMode('week2');
     document.getElementById('main').style.display = 'flex';
     document.getElementById('topbar-text').textContent = '时序管理局 · 深层模式';
     // 显示过渡文字后直接进入Clock对话
@@ -2359,9 +2325,8 @@ introBtn.addEventListener('click', function(){
       if(bgmCtx.state === 'suspended') bgmCtx.resume();
     } catch(e){}
   }
-  // 用户交互后启动BGM和螺旋
+  // 用户交互后启动BGM
   setTimeout(initBGM, 200);
-  setTimeout(initSpiral, 100);
 });
 
 // ===== BGM：打点计时器 + 摩斯电码暗示 =====
@@ -3103,7 +3068,7 @@ function showConvergenceEnding(){
   // 增强螺旋背景
   var sbg = document.getElementById('spiral-bg');
   sbg.classList.add('enhanced');
-  setSpiralMode('enhanced');
+  setBgMode('enhanced');
 
   // 催眠层（在main内部，不依赖body层叠）
   var hypnoLayer = document.createElement('div');
@@ -3165,7 +3130,7 @@ function showConvergenceEnding(){
 
     // 螺旋恢复
     sbg.classList.remove('enhanced');
-    setSpiralMode('default');
+    setBgMode('default');
 
     // 显示最终文字
     var finalTextContent =
@@ -3882,7 +3847,7 @@ function showClockEnding(){
   // 螺旋加强
   var sbg = document.getElementById('spiral-bg');
   sbg.classList.add('enhanced');
-  setSpiralMode('enhanced');
+  setBgMode('enhanced');
 
   var ev = document.createElement('div');
   ev.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 40px 120px;text-align:center;overflow-y:auto;';
