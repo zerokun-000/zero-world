@@ -4407,6 +4407,7 @@ function showWeek2Transition(){
 
 // ===== 时钟先生（Clock）对话 =====
 var clockStep = 0;
+var dialogueSteps = null;       // Clock 对话步骤数据（全局，供各函数引用）
 var pendingClockChoice = null;  // 暂存玩家在第三步的原始选择
 
 function startClockDialogue(){
@@ -4453,7 +4454,7 @@ function renderClockDialogue(){
   textDiv.className = 'text';
 
   // 对话内容
-  var dialogueSteps = [
+  dialogueSteps = [
     {
       id: 'intro',
       text: '灯光闪了一下。\n\n' +
