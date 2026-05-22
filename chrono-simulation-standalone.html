@@ -1260,7 +1260,7 @@ body[data-week="2"] #gate::before {
 从很深的地方传来钟表的滴答声。很轻，很远。
 
 你伸出手，去按镜片上那个唯一的按键。</div>
-  <button class="intro-btn" id="intro-btn" onclick="document.getElementById('intro-page').style.display='none';document.getElementById('gate').style.display='flex';setTimeout(function(){document.getElementById('gate-input').focus()},100);">进 入</button>
+  <button class="intro-btn" id="intro-btn">进 入</button>
   <div class="intro-hint">© 时序管理局 · 所有权利保留</div>
 </div>
 
@@ -1269,7 +1269,7 @@ body[data-week="2"] #gate::before {
   <h1>时 空 模 拟</h1>
   <div class="sub">CHRONO SIMULATION · RECRUITMENT TEST</div>
   <input id="gate-input" type="text" placeholder="输入准入密钥" autocomplete="off" spellcheck="false">
-  <button id="gate-btn" onclick="tryUnlock()">进 入</button>
+  <button id="gate-btn">进 入</button>
   <div class="err" id="gate-err"></div>
   <div class="hint" id="gate-hint">© 时序管理局 · 所有权利保留</div>
 </div>
@@ -5300,8 +5300,42 @@ if(typeof MISSIONS === 'undefined'){
     }
   }
 
-  // 导出给 HTML onclick 属性使用
-  window.tryUnlock = tryUnlock;
+  // ===== 按钮事件绑定（IIFE 内部，直接访问 tryUnlock 等函数）=====
+  var _introBtn = document.getElementById('intro-btn');
+  var _gateBtn = document.getElementById('gate-btn');
+  var _gateInput = document.getElementById('gate-input');
+
+  // intro-btn：进入游戏
+  function handleIntroClick(){
+    document.getElementById('intro-page').style.display = 'none';
+    document.getElementById('gate').style.display = 'flex';
+    setTimeout(function(){ _gateInput.focus(); }, 100);
+    if(!bgmCtx){
+      try { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
+    setBGMMode('default');
+  }
+  _introBtn.addEventListener('click', handleIntroClick);
+  // 手机端：touchstart 直接调用，避免 300ms 延迟
+  _introBtn.addEventListener('touchstart', function(e){
+    e.preventDefault(); e.stopPropagation();
+    handleIntroClick();
+  }, {passive: false});
+
+  // gate-btn：密码解锁
+  _gateBtn.addEventListener('click', tryUnlock);
+  // 手机端
+  _gateBtn.addEventListener('touchstart', function(e){
+    e.preventDefault(); e.stopPropagation();
+    tryUnlock();
+  }, {passive: false});
+
+  // gate-input：回车解锁
+  _gateInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') tryUnlock();
+  });
+
 })();
 
 </script>
