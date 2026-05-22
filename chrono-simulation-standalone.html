@@ -4170,7 +4170,7 @@ function renderClockDialogue(){
             '{{po|你想动。但你的四肢——不，你的**每一个细胞**——都在拒绝这个真相。}}\n\n' +
             '{{po|不是纳米颗粒。是**你自己的身体在害怕**。怕自己不是"自己"。}}',
       choices: [],
-      autoNext: 'three_choices'
+      autoNext: 'three_choices_truth'
     },
     // 密码失败 → 时钟失望 → 接回 three_choices
     {
@@ -4268,6 +4268,24 @@ function renderClockDialogue(){
       choices: [
         {text: '"我是来救他的。"', tag: 'insist_save'},
         {text: '你不说话了。你在消化他说的一切', tag: 'silence'}
+      ]
+    },
+    // 第3.5步：破球揭示真相后的选择（真结局路线）
+    {
+      id: 'three_choices_truth',
+      text: '灯没有再亮。\n\n' +
+            '怀表的秒针声停在黑暗里，像一根**没有拨完的弦**。\n\n' +
+            '"{{red|……你听到了。}}"\n\n' +
+            '时钟的声音第一次**没有节奏**。像是一个排练了无数遍的剧本，'
+            '被人在最后一刻撕掉了一页。\n\n' +
+            '"{{red|破球告诉你的——是真相。但真相不等于全貌。}}"\n\n' +
+            '他从黑暗里拿出时间倒流器。三个格子，两个还亮着。\n\n' +
+            '"{{red|拿着。不管你怎么选——它能让你多一条退路。}}"\n\n' +
+            '{{po|他在帮你。还是在给你一个"看起来像选择"的错觉？}}',
+      choices: [
+        {text: '"……我加入。" — 跟着时钟走', tag: 'join'},
+        {text: '"我拒绝。" — 信破球，走暗门', tag: 'resist'},
+        {text: '"……我需要想想。" — 沉默', tag: 'spare'}
       ]
     },
     {
