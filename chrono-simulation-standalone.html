@@ -4331,6 +4331,7 @@ function startClockDialogue(){
 }
 
 function renderClockDialogue(){
+  try{
   var nv = document.getElementById('narrative-view');
   nv.innerHTML = '';
 
@@ -4735,6 +4736,16 @@ function renderClockDialogue(){
     choicesDiv.appendChild(btn);
   });
   nv.appendChild(choicesDiv);
+  } catch(e) {
+    var nvErr = document.getElementById('narrative-view');
+    if(nvErr) {
+      nvErr.innerHTML = '<div style="color:#f44;padding:24px;line-height:1.8;">' +
+        '<b>renderClockDialogue 错误：</b><br>' +
+        e.toString() + '<br><br>' +
+        '<span style="font-size:11px;color:#aaa;">' + (e.stack||'') + '</span></div>';
+      nvErr.style.display = 'block';
+    }
+  }
 }
 
 function endClockPath(){
