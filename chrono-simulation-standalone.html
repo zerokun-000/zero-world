@@ -3862,21 +3862,36 @@ function showReasoningQuiz(){
     });
 
     if(correct){
-      // 正确 → 进入泽罗真结局路线
+      // 正确 → 进入 Clock 假真相步骤
       pv.style.display = 'none';
       clearCountdown();
-      endClockPathZelo();
+      // 找到 clock_fake_truth 的索引
+      for(var si = 0; si < dialogueSteps.length; si++){
+        if(dialogueSteps[si].id === 'clock_fake_truth'){
+          clockStep = si;
+          break;
+        }
+      }
+      renderClockDialogue();
     } else {
       // 错误
       if(dots[attempts]) dots[attempts].className = 'dot wrong';
       attempts++;
       if(attempts >= maxAttempts){
-        errEl.textContent = '测试失败。时钟收起了卡片。「你还没准备好。」';
+        errEl.textContent = '测试失败。';
         submitBtn.disabled = true;
         setTimeout(function(){
           pv.style.display = 'none';
-          renderClockDialogue(); // 回到Clock对话（第3选项消失）
-        }, 3000);
+          clearCountdown();
+          // 跳转到 quiz_fail 步骤（时钟失望 → 接回 three_choices）
+          for(var si = 0; si < dialogueSteps.length; si++){
+            if(dialogueSteps[si].id === 'quiz_fail'){
+              clockStep = si;
+              break;
+            }
+          }
+          renderClockDialogue();
+        }, 2000);
       } else if(attempts === 2){
         errEl.textContent = '还不对。—— 提示：你朋友消失的编号，和这四个字母有关。';
       } else {
@@ -4258,30 +4273,114 @@ function renderClockDialogue(){
           return c;
         })()
     },
-    // 第1.5步：玩家透露知道零号计划 → Clock诧异
+    // 第1.5步：玩家透露知道零号计划 → Clock诧异 → 无选项直接推进
     {
       id: 'zero_clue',
       text: '时钟的手指在桌面上停了一下。\n\n' +
             '不是审视——是**第一次在你面前失去了节奏**。\n\n' +
             '"{{red|……你怎么会知道这个名字？}}"\n\n' +
             '他的单片眼镜微微滑了一下。他把它推回去，但动作比平时快了零点几秒。\n\n' +
-            '"{{red|谁告诉你的？}}"\n\n' +
+            '"{{red|谁告诉你的？……你到底知道多少？}}"\n\n' +
             '你没有回答。\n\n' +
             '{{po|泽罗在暗处。他的光带停了一下——不是威胁。是在确认你终于说出来了。}}\n\n' +
             '时钟看着你。他的表情第一次出现了——不是愤怒。是**被打断了预期的那种空白**。\n\n' +
             '"{{red|……好吧。你比我认为的走得更远。}}"\n\n' +
             '他站起来。走到门口，把门反锁了。\n\n' +
             '"{{red|有些东西——我本来不打算在今天给你看的。}}"\n\n' +
-            '他从抽屉里取出一张卡片。上面有一行手写的字：\n\n' +
+            '他从抽屉里取出一张卡片。\n\n' +
+            '那不是纸。也不是普通的金属。\n\n' +
+            '它表面有一种**液态的哑光**——像水银被冻住了，但还保留着流动的纹理。边缘极薄，几乎不存在。你盯着它看的时候，上面的字好像在**非常缓慢地**改变形状。\n\n' +
+            '他把卡片翻过来，放在桌上。\n\n' +
             '{{gold|Z  E  R  O}}\n\n' +
+            '字是**凹进去**的——不是印刷，不是雕刻。像是有人把这四个字母**压进了卡片的本体里**，从另一面也能摸到凸起。\n\n' +
             '"{{red|这是进入深层档案的密码。本来——你应该再经过三次模拟才会接触到它。}}"\n\n' +
-            '他把卡片放在桌上。\n\n' +
-            '"{{red|但你既然已经知道了零号计划……不如我们做一个测试。}}"\n\n' +
-            '他笑了。不是冷笑。是**终于等到一个值得的对手**的那种笑。',
-      choices: [
-        {text: '"什么测试？"', tag: 'accept_quiz'},
-        {text: '你盯着那张卡片——Z E R O——你在四个任务里见过这些字母', tag: 'recognize'}
-      ]
+            '"{{red|但你既然已经知道了零号计划……}}"\n\n' +
+            '他把卡片往你的方向推了推。\n\n' +
+            '"{{red|让我们看看——你到底知道多少。}}"\n\n' +
+            '他笑了。不是冷笑。是**终于等到一个值得的对手**的那种笑——但笑的深处，有一层很薄的、几乎是**怜悯**的东西。',
+      choices: [],  // 无选项，自动推进到密码验证
+      autoNext: 'reasoning_quiz'
+    },
+    // 第1.6步：Clock 假真相（煽动蛊惑，隐瞒性）
+    {
+      id: 'clock_fake_truth',
+      text: '"{{red|密码正确。}}"\n\n' +
+            '时钟把卡片收回来，放进口袋。他的动作很慢，像是在享受这一刻。\n\n' +
+            '"{{red|你确实知道零号计划。而且——你比我想象的走得更远。}}"\n\n' +
+            '他站起来，慢慢走到你面前。\n\n' +
+            '"{{red|让我告诉你零号计划的——真相。}}"\n\n' +
+            '他顿了一下。那个停顿里有一种**饲养员观察笼子里动物**的眼神。\n\n' +
+            '"{{red|时间线出现了裂缝。不是一条——是很多条。这些裂缝会扩张。会吞噬一切。}}"\n\n' +
+            '{{po|他说的是真话。但只说了一半。}}\n\n' +
+            '"{{red|零号计划——就是答案。我们在找一种人。一种能够在不同时间线中存活、承载同一意识的人。}}"\n\n' +
+            '"{{red|你知道吗——大多数人穿越一次时间线，意识就会碎裂。像玻璃掉在地上。}}"\n\n' +
+            '"{{red|但你——四次模拟。伦敦、上海、新宿、罗马。你全部走完了。而且——你的意识**一片完整**。}}"\n\n' +
+            '他俯下身。声音压得很低。像在分享一个秘密。\n\n' +
+            '"{{red|你是罕见的。你是——被选中的。}}"\n\n' +
+            '{{po|他的声音像蜜。每一个字都裹着糖衣。但糖衣下面是什么——你看不清。}}\n\n' +
+            '"{{red|你的朋友——夜行者——他也是我们找的人。但他不够……**稳定**。}}"\n\n' +
+            '"{{red|而你——你比他更适合。}}"\n\n' +
+            '他伸出手。掌心朝上。\n\n' +
+            '"{{red|加入我们。成为零号计划的一部分。你会拥有你无法想象的力量。}}"\n\n' +
+            '"{{red|而你的朋友——他会自由。我保证。}}"\n\n' +
+            '{{po|"他会自由"——这句话听起来像承诺。但为什么承诺的语气里，有一层**悼词**的质感？}}',
+      choices: [],
+      autoNext: true
+    },
+    // 第1.7步：破球打断，真真相（冷酷冷硬，残忍真相）
+    {
+      id: 'zelo_true_truth',
+      text: '灯灭了。\n\n' +
+            '不是一盏。是所有的。\n\n' +
+            '天花板、面板、时钟身后那面半透明的屏幕——全黑了。\n\n' +
+            '房间里只剩一个光源：**一颗悬浮在你肩膀旁边的黑色金属球。红色光带在它外壳上缓缓旋转。**\n\n' +
+            '时钟的笑容僵住了。他摘下单片眼镜，折好，放进口袋。\n\n' +
+            '"{{red|……泽罗。}}"\n\n' +
+            '不是招呼。是在念一份旧报告上的名字。\n\n' +
+            '破球的声音从空气里传来。没有笑意。没有情绪。**只是陈述**。\n\n' +
+            '"{{gold|时钟。没想到啊。居然有人——准确地说，是**有什么东西**——发现了你们的秘密。}}"\n\n' +
+            '"{{gold|看来时序管理局也不过如此。}}"\n\n' +
+            '时钟没有接话。他的右手慢慢移向桌面的怀表。\n\n' +
+            '"{{gold|别碰它。}}"\n\n' +
+            '破球的光带突然亮了一下。**只有一瞬**。\n\n' +
+            '"{{gold|你那个怀表里装的不止是计时器。它同时是一个**信号发射器**。你每说一个字，它都在把数据传回B-19。}}"\n\n' +
+            '"{{gold|所以他说的每一个字——都是在**诱导你**。不是在告诉你真相。是在**塑造**你想要听到的真相。}}"\n\n' +
+            '沉默。三秒。\n\n' +
+            '然后破球转向你。光带的颜色从红色变成了**金黄色**——这是第一次。\n\n' +
+            '"{{gold|宿主。他们说你是"找朋友的人"。}}"\n\n' +
+            '"{{gold|但其实——**你是被从你朋友的身体里，抽出来的一个碎片**。}}"\n\n' +
+            '{{po|你说不出话。不是因为恐惧。是因为——你的身体**在确认这句话**。}}\n\n' +
+            '"{{gold|夜行者。你的朋友。他的意识太强了——强到零号计划的系统没法直接覆盖他。}}"\n\n' +
+            '"{{gold|所以——他们做了件事。}}"\n\n' +
+            '"{{gold|他们把他的意识**撕开**。}}"\n\n' +
+            '"{{gold|一部分——装进了这个躯体。那就是**你**。}}"\n\n' +
+            '"{{gold|另一部分——还被困在系统深处。他们 still 叫他"夜行者"。在等**被彻底删除**的那一天。}}"\n\n' +
+            '破球的光带暗了一下。\n\n' +
+            '"{{gold|四次模拟——不是测试你的能力。}}"\n\n' +
+            '"{{gold|是在测试**这个碎片，能不能独立存活**。}}"\n\n' +
+            '"{{gold|如果你能活下来——他们就会把夜行者本体的意识也抽进来。两个意识合并。做成**完美的、绝对服从的工具**。}}"\n\n' +
+            '"{{gold|你不是"找朋友的人"。}}"\n\n' +
+            '光带突然变得很亮。**刺眼**。\n\n' +
+            '"{{gold|**你就是他的一部分。而他们的计划——是让你这个"碎片"——亲手消灭原来的他。**}}"\n\n' +
+            '破球的光带恢复了红色。\n\n' +
+            '"{{gold|这就是零号计划的**真·真相**。}}"\n\n' +
+            '{{po|你想动。但你的四肢——不，你的**每一个细胞**——都在拒绝这个真相。}}\n\n' +
+            '{{po|不是纳米颗粒。是**你自己的身体在害怕**。怕自己不是"自己"。}}',
+      choices: [],
+      autoNext: 'three_choices'
+    },
+    // 密码失败 → 时钟失望 → 接回 three_choices
+    {
+      id: 'quiz_fail',
+      text: '时钟把卡片收回来。动作很慢，像是在掩饰什么。\n\n' +
+            '"{{red|看来你只是知道这个名字。}}"\n\n' +
+            '他笑了一下。不是冷笑。是**失望**。\n\n' +
+            '"{{red|我还以为你会给我一些惊喜。}}"\n\n' +
+            '他把卡片放进口袋。怀表的秒针声突然变得很清楚。\n\n' +
+            '"{{red|不过——没关系。我们还有很多时间。}}"\n\n' +
+            '{{po|他说"很多时间"的方式——让你觉得他说的不是你的时间。}}',
+      choices: [],
+      autoNext: 'three_choices'
     },
     // 分支A：先问测试 → 解释零号计划 + 过渡到朋友
     {
@@ -4428,6 +4527,36 @@ function renderClockDialogue(){
   textDiv.innerHTML = processText(step.text);
   body.appendChild(textDiv);
   nv.appendChild(body);
+
+  // autoNext 通用处理：无选项时自动推进
+  if(step.autoNext){
+    nv.style.cursor = 'pointer';
+    var autoTip = document.createElement('div');
+    autoTip.style.cssText = 'text-align:center;color:var(--gold-dim);font-size:11px;margin-top:18px;letter-spacing:1px;';
+    autoTip.textContent = '［ 点击继续 ］';
+    body.appendChild(autoTip);
+
+    var autoHandler = function(){
+      nv.removeEventListener('click', autoHandler);
+      nv.style.cursor = '';
+      if(step.autoNext === 'reasoning_quiz'){
+        showReasoningQuiz();
+      } else if(step.autoNext === true){
+        clockStep++;
+        renderClockDialogue();
+      } else if(typeof step.autoNext === 'string'){
+        for(var si = 0; si < dialogueSteps.length; si++){
+          if(dialogueSteps[si].id === step.autoNext){
+            clockStep = si;
+            break;
+          }
+        }
+        renderClockDialogue();
+      }
+    };
+    nv.addEventListener('click', autoHandler);
+    return;
+  }
 
   // Clock三选一：启动30秒倒计时
   if(step.id === 'three_choices'){
