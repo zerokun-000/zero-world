@@ -3674,13 +3674,9 @@ function showZeroUnlockQuiz(){
     if(correct){
       pv.style.display = 'none';
       clearCountdown();
-      for(var si = 0; si < dialogueSteps.length; si++){
-        if(dialogueSteps[si].id === 'zero_clue'){
-          clockStep = si;
-          break;
-        }
-      }
-      renderClockDialogue();
+      // 设置跳转目标，由 renderClockDialogue 消费
+      window.gTargetStepId = 'zero_clue';
+      startClockDialogue();
     } else {
       if(dots[attempts]) dots[attempts].className = 'dot wrong';
       attempts++;
@@ -4027,6 +4023,12 @@ function startClockDialogue(){
   renderClockDialogue();
 }
 
+// 全局对话步骤（供外部访问）
+var gDialogueSteps = null;
+
+// 外部跳转目标（showZeroUnlockQuiz 设置，renderClockDialogue 消费）
+var gTargetStepId = null;
+
 function renderClockDialogue(){
   var nv = document.getElementById('narrative-view');
   nv.innerHTML = '';
@@ -4322,6 +4324,17 @@ function renderClockDialogue(){
     // 所有对话结束，直接触发结尾
     endClockPath();
     return;
+  }
+
+  // 消费 gTargetStepId
+  if(window.gTargetStepId){
+    for(var si = 0; si < dialogueSteps.length; si++){
+      if(dialogueSteps[si].id === window.gTargetStepId){
+        clockStep = si;
+        break;
+      }
+    }
+    window.gTargetStepId = null;
   }
 
   var step = dialogueSteps[clockStep];
