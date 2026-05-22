@@ -1350,6 +1350,23 @@ body[data-week="2"] #gate::before {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* BGM 模式指示器（调试用，右上角） */
+#bgm-indicator {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  z-index: 9999;
+  background: rgba(0,0,0,0.55);
+  color: var(--gold, #d4a843);
+  font-size: 12px;
+  font-family: 'Noto Serif SC', serif;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+#bgm-indicator.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -2431,6 +2448,9 @@ function stopBGM(){
     try { n.stop(); } catch(e){}
   });
   bgmNodes = [];
+  // 清空 masterBGM 引用，防止旧增益节点残留在 destination 上
+  if(masterBGM) { try { masterBGM.disconnect(); } catch(e){} }
+  masterBGM = null;
 }
 
 // 辅助：创建并追踪 oscillator
@@ -2476,6 +2496,26 @@ function setBGMMode(mode){
   bgmRunning = true;
   _currentMode = mode;
   bgmMode = mode;
+
+  // 更新 BGM 模式指示器（右上角）
+  (function(){
+    var names = {
+      'default':      'BGM · 默认',
+      'london':      'BGM · 伦敦',
+      'shanghai':    'BGM · 上海',
+      'tokyo':       'BGM · 东京',
+      'rome':         'BGM · 罗马',
+      'clock':        'BGM · 时钟',
+      'zelo':         'BGM · Zelo',
+      'convergence':  'BGM · 汇聚'
+    };
+    var el = document.getElementById('bgm-indicator');
+    if(!el) return;
+    el.textContent = names[mode] || ('BGM · ' + mode);
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(function(){ el.classList.remove('show'); }, 4000);
+  })();
 
   masterBGM = bgmCtx.createGain();
   masterBGM.gain.value = 0.22;
@@ -5088,6 +5128,9 @@ if(typeof MISSIONS === 'undefined'){
     <button class="clue-close-btn" id="clue-close-btn">关 闭 档 案</button>
   </div>
 </div>
+
+<!-- BGM 模式指示器（调试） -->
+<div id="bgm-indicator"></div>
 
 </body>
 </html>
