@@ -2224,14 +2224,17 @@ var gateInput = document.getElementById('gate-input');
 var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
-function bindClickAndTouch(btn, handler){
+// 手机端兼容：同时绑定 click 和 touchstart
+function bindMobileClick(btn, handler){
   btn.addEventListener('click', handler);
   btn.addEventListener('touchstart', function(e){
     e.preventDefault();
+    e.stopPropagation();
     handler();
   }, {passive: false});
 }
-bindClickAndTouch(gateBtn, tryUnlock);
+
+bindMobileClick(gateBtn, tryUnlock);
 gateInput.addEventListener('keydown', function(e){
   if(e.key === 'Enter') tryUnlock();
 });
@@ -2286,7 +2289,7 @@ introPage.style.display = 'flex';
 document.getElementById('gate').style.display = 'none';
 document.getElementById('main').style.display = 'none';
 
-bindClickAndTouch(introBtn, function(){
+bindMobileClick(introBtn, function(){
   introPage.style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
   setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
