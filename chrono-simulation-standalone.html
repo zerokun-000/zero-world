@@ -3906,6 +3906,101 @@ function showReasoningQuiz(){
   };
 }
 
+// ===== 零号计划解锁密码验证（点击第3选项时触发）=====
+function showZeroUnlockQuiz(){
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+
+  var pv = document.getElementById('puzzle-view');
+  pv.style.display = 'flex';
+
+  var questionEl = pv.querySelector('.puzzle-question');
+  var inputEl = document.getElementById('puzzle-input');
+  var errEl = document.getElementById('puzzle-err');
+  var submitBtn = document.getElementById('puzzle-submit-btn');
+  var dots = document.querySelectorAll('#puzzle-attempts .dot');
+
+  questionEl.innerHTML =
+    '你选择了：「{{red|我知道零号计划。}}」<br><br>' +
+    '时钟停下动作。<br>' +
+    '他看着你，像在重新评估一件他以为已经评估过的东西。<br><br>' +
+    '"{{red|哦？}}"<br><br>' +
+    '他笑了。<br>' +
+    '不是冷笑。是**那种笑**——你知道答案就在嘴边，但他不会直接告诉你。<br><br>' +
+    '他拿出四张卡片，在桌上排开——<br><br>' +
+    '<span style="font-size:1.8em;letter-spacing:0.6em;color:var(--gold);">Z &nbsp; E &nbsp; R &nbsp; O</span><br><br>' +
+    '"{{red|证明给我看——你知道这四个字母拼起来是什么。}}"';
+
+  inputEl.value = '';
+  errEl.textContent = '';
+
+  var attempts = 0;
+  var maxAttempts = 3;
+
+  dots.forEach(function(d, i){
+    d.className = i < maxAttempts ? 'dot active' : 'dot';
+  });
+
+  var reviewBtn = document.getElementById('puzzle-review-btn');
+  reviewBtn.onclick = function(){ enterReviewMode('reasoning'); };
+  reviewSave = {quizType: 'reasoning', quizEl: pv};
+
+  inputEl.focus();
+
+  function checkAnswer(){
+    var val = inputEl.value.trim().toLowerCase();
+    if(!val){
+      errEl.textContent = '输入你的答案。';
+      return;
+    }
+
+    var correct = false;
+    var accept = ['zero','0','零','归零','时间归零','零号计划','z','zelo'];
+    accept.forEach(function(a){
+      if(val === a) correct = true;
+    });
+
+    if(correct){
+      pv.style.display = 'none';
+      clearCountdown();
+      for(var si = 0; si < dialogueSteps.length; si++){
+        if(dialogueSteps[si].id === 'zero_clue'){
+          clockStep = si;
+          break;
+        }
+      }
+      renderClockDialogue();
+    } else {
+      if(dots[attempts]) dots[attempts].className = 'dot wrong';
+      attempts++;
+      if(attempts >= maxAttempts){
+        errEl.textContent = '看来你并不真正了解零号计划。';
+        submitBtn.disabled = true;
+        setTimeout(function(){
+          pv.style.display = 'none';
+          clearCountdown();
+          for(var si = 0; si < dialogueSteps.length; si++){
+            if(dialogueSteps[si].id === 'quiz_fail'){
+              clockStep = si;
+              break;
+            }
+          }
+          renderClockDialogue();
+        }, 2000);
+      } else if(attempts === 2){
+        errEl.textContent = '还不对。—— 提示：你朋友消失的编号，和这四个字母有关。';
+      } else {
+        errEl.textContent = '不对。再想想。';
+      }
+    }
+  }
+
+  submitBtn.onclick = checkAnswer;
+  inputEl.onkeydown = function(e){
+    if(e.key === 'Enter') checkAnswer();
+  };
+}
+
 // ===== 获取任务副标题 =====
 function getMissionSub(key){
   var m = MISSIONS.find(function(m2){ return m2.key === key; });
@@ -4298,8 +4393,8 @@ function renderClockDialogue(){
             '他把卡片往你的方向推了推。\n\n' +
             '"{{red|让我们看看——你到底知道多少。}}"\n\n' +
             '他笑了。不是冷笑。是**终于等到一个值得的对手**的那种笑——但笑的深处，有一层很薄的、几乎是**怜悯**的东西。',
-      choices: [],  // 无选项，自动推进到密码验证
-      autoNext: 'reasoning_quiz'
+      choices: [],
+      autoNext: true
     },
     // 第1.6步：Clock 假真相（煽动蛊惑，隐瞒性）
     {
@@ -4583,9 +4678,9 @@ function renderClockDialogue(){
       } else {
         clockStep++;
       }
-      // 第1.5步：零号计划线索 → 推理验证
+      // 第1.5步：零号计划线索 → 密码验证解锁
       if(c.tag === 'ask_zero'){
-        renderClockDialogue();
+        showZeroUnlockQuiz();
         return;
       }
       // zero_clue 步骤的两个选项
