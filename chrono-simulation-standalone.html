@@ -2352,13 +2352,47 @@ var state = {
   missionIndex: 0,
   puzzleSolved: false,  // 当前任务谜题是否已解
   puzzleFailed: false,  // 当前任务谜题是否失败
-  cluesAvailable: false // 一周目完成后是否解锁线索档案
+  cluesAvailable: false, // 一周目完成后是否解锁线索档案
+  exploredHotspots: {}     // 探索的热点（持久化到 localStorage）
 };
+
+// ===== 状态持久化（localStorage）=====
+function saveState(){
+  try {
+    var data = {
+      exploredHotspots: state.exploredHotspots || {},
+      endings: state.endings || [],
+      missionResults: state.missionResults || {},
+      cluesAvailable: !!state.cluesAvailable
+    };
+    localStorage.setItem('chrono_state', JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadState(){
+  try {
+    var raw = localStorage.getItem('chrono_state');
+    if(!raw) return;
+    var data = JSON.parse(raw);
+    if(data.exploredHotspots) state.exploredHotspots = data.exploredHotspots;
+    if(data.endings) state.endings = data.endings;
+    if(data.missionResults) state.missionResults = data.missionResults;
+    if(data.cluesAvailable) state.cluesAvailable = data.cluesAvailable;
+  } catch(e) {}
+}
+
+function clearState(){
+  try { localStorage.removeItem('chrono_state'); } catch(e) {}
+}
+
+// 页面加载时恢复状态
+loadState();
 
 // ===== 密码系统 =====
 var PASSWORDS = {
   week1: 'zero2026',
-  week2: 'zerotime'
+  week2: 'zerotime',
+  reset: 'zeroreset'   // 一切清零，强制刷新回到初始状态
 };
 
 // ===== 登录逻辑 =====
@@ -2395,6 +2429,9 @@ function tryUnlock(){
 
   if(val === PASSWORDS.week1){
     // 一周目：线性任务链，自动开始
+    // 全新一周目，清除旧的热点收集数据
+    state.exploredHotspots = {};
+    saveState();
     state.week = 1;
     console.log('[tryUnlock] -> state.week = 1');
     state.missionIndex = 0;
@@ -2419,6 +2456,24 @@ function tryUnlock(){
     document.getElementById('topbar-text').textContent = '时序管理局 · 深层模式';
     // 显示过渡文字后直接进入Clock对话
     showWeek2Transition();
+  } else if(val === PASSWORDS.reset){
+    // 一切清零，强制刷新回到初始状态
+    clearState();
+    state.exploredHotspots = {};
+    state.endings = [];
+    state.missionResults = {};
+    state.cluesAvailable = false;
+    state.week = 1;
+    state.missionIndex = 0;
+    state.currentMission = null;
+    state.currentChapter = 0;
+    state.history = [];
+    state.puzzleSolved = false;
+    state.puzzleFailed = false;
+    gateErr.style.color = '#4a4';
+    gateErr.textContent = '所有数据已清零，正在刷新…';
+    setTimeout(function(){ location.href = location.href.split('?')[0] + '?v=' + Date.now(); }, 800);
+    return;
   } else {
     gateErr.textContent = '密钥验证失败。请联系管理员。';
     gateInput.value = '';
@@ -3282,6 +3337,7 @@ function renderChapter(chapter){
   if(chapter.letterClue){
     if(!state.exploredHotspots) state.exploredHotspots = {};
     state.exploredHotspots[chapter.letterClue] = true;
+    saveState();
   }
 
   body.appendChild(textDiv);
@@ -3641,11 +3697,13 @@ function showHotspotContent(id){
   // 标记已探索（用于二周目逆推线索追踪）
   if(!state.exploredHotspots) state.exploredHotspots = {};
   state.exploredHotspots[id] = true;
+  saveState();
 
   // 记录关联的字母线索（如热点有关联字母）
   if(data.letterKey){
     if(!state.exploredHotspots) state.exploredHotspots = {};
     state.exploredHotspots[data.letterKey] = true;
+    saveState();
   }
 
   // 绑定关闭
@@ -4064,7 +4122,9 @@ function showEnding(){
   // 记录结局
   if(state.currentMission && endingKey){
     state.endings.push({ mission: state.currentMission, key: endingKey });
+    saveState();
     state.missionResults[state.currentMission] = endingKey;
+    saveState();
   }
 
   state.missionIndex++;
@@ -4226,6 +4286,7 @@ function showConvergenceEnding(){
 // ===== 线索档案页面 =====
 function showClueReview(){
   state.cluesAvailable = true;
+  saveState();
   document.getElementById('clue-view').style.display = 'flex';
 
   var container = document.getElementById('clue-content');
@@ -4238,6 +4299,7 @@ function showClueReview(){
 
     // 根据谜题完成情况决定显示状态
     var result = state.missionResults[mk] || '';
+    saveState();
     var statusText = '状态：任务已完成';
     if(result.indexOf('failed') >= 0){
       statusText = '状态：理解偏差 · 部分关键信息未识别';
