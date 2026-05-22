@@ -108,7 +108,7 @@ body {
   flex-direction: column;
   align-items: center;
   font-family: "Microsoft YaHei", sans-serif;
-  padding: 32px 24px 20px;
+  padding: 16px 16px 12px;
 }
 #intro-page::before {
   content: '';
@@ -118,21 +118,21 @@ body {
 }
 #intro-page > * { position: relative; z-index: 1; }
 #intro-page .intro-icon {
-  font-size: 36px;
-  margin-bottom: 12px;
+  font-size: 28px;
+  margin-bottom: 6px;
   opacity: 0.8;
 }
 #intro-page .intro-title {
   color: var(--gold);
-  font-size: 20px;
-  letter-spacing: 6px;
-  margin-bottom: 16px;
+  font-size: 19px;
+  letter-spacing: 5px;
+  margin-bottom: 10px;
   text-shadow: 0 0 20px rgba(212,168,67,0.3);
 }
 #intro-page .intro-text {
   color: #999;
-  font-size: 13px;
-  line-height: 2.0;
+  font-size: 12px;
+  line-height: 1.65;
   max-width: 680px;
   width: 100%;
   text-align: justify;
@@ -140,8 +140,8 @@ body {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  margin-bottom: 12px;
-  padding: 0 8px;
+  margin-bottom: 8px;
+  padding: 0 4px;
   /* 滚动条美化 */
   scrollbar-width: thin;
   scrollbar-color: rgba(212,168,67,0.2) transparent;
@@ -160,10 +160,10 @@ body {
   background: rgba(139,105,20,0.3);
   border: 1px solid var(--gold-dim);
   color: var(--gold);
-  padding: 12px 48px;
+  padding: 10px 40px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-family: inherit;
   letter-spacing: 3px;
   transition: all .3s;
@@ -176,8 +176,8 @@ body {
 }
 #intro-page .intro-hint {
   color: var(--gold-faint);
-  font-size: 11px;
-  margin-top: 12px;
+  font-size: 10px;
+  margin-top: 8px;
   letter-spacing: 2px;
   opacity: 0.5;
   flex-shrink: 0;
@@ -699,12 +699,12 @@ body[data-week="2"] #gate::before {
     transform: translate(-50%, -50%);
     overflow-y: auto;
   }
-  #intro-page { padding: 16px; }
+  #intro-page { padding: 12px; }
   #intro-page .intro-text {
     font-size: 12px;
-    line-height: 2;
+    line-height: 1.6;
     max-width: 95vw;
-    padding: 0 8px;
+    padding: 0 4px;
   }
   #intro-page .intro-title { font-size: 17px; letter-spacing: 4px; }
   #intro-page .intro-btn { padding: 14px 40px; min-height: 48px; }
