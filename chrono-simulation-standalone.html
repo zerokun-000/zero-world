@@ -2224,7 +2224,14 @@ var gateInput = document.getElementById('gate-input');
 var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
-gateBtn.addEventListener('click', tryUnlock);
+function bindClickAndTouch(btn, handler){
+  btn.addEventListener('click', handler);
+  btn.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    handler();
+  }, {passive: false});
+}
+bindClickAndTouch(gateBtn, tryUnlock);
 gateInput.addEventListener('keydown', function(e){
   if(e.key === 'Enter') tryUnlock();
 });
@@ -2279,7 +2286,7 @@ introPage.style.display = 'flex';
 document.getElementById('gate').style.display = 'none';
 document.getElementById('main').style.display = 'none';
 
-introBtn.addEventListener('click', function(){
+bindClickAndTouch(introBtn, function(){
   introPage.style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
   setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
@@ -4310,11 +4317,12 @@ function renderClockDialogue(){
       ]
     },
     // 第4步：破球介入（切断系统 → 甩数据 → 指示暗门位置）
+    // 注意：如果玩家已经通过 zelo_true_truth，灯已经灭了，这里不再重复"灯灭了"
     {
       id: 'zelo_intervention',
-      text: '灯灭了。\n\n' +
-            '不是一盏——是所有的。天花板、面板、时钟身后那面半透明的屏幕——全黑了。\n\n' +
-            '房间里只剩一个光源：一颗悬浮在你肩膀旁边的黑色金属球。红色光带在它外壳上缓缓旋转。\n\n' +
+      text: '灯没有再亮起来。\n\n' +
+            '房间里的黑暗没有散去。天花板、面板、时钟身后那面半透明的屏幕——还是黑的。\n\n' +
+            '你肩膀旁边的黑色金属球还在。红色光带在它外壳上缓缓旋转。\n\n' +
             '时钟摘下单片眼镜，折好，放进口袋。\n\n' +
             '"{{red|……泽罗。}}"\n\n' +
             '不是招呼。是在念一份旧报告上的名字。\n\n' +
