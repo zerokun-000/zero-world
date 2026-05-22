@@ -1200,6 +1200,147 @@ body[data-week="2"] #gate::before {
   #hotspot-overlay .hotspot-body { font-size: 13px; }
 }
 
+/* ===== 逃离关卡 ===== */
+#escape-quiz-view {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 180;
+  display: none;
+  flex-direction: column;
+  background: rgba(6,10,16,0.98);
+  padding: 48px 32px;
+  overflow-y: auto;
+}
+#escape-quiz-view .quiz-title {
+  color: var(--gold);
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+#escape-quiz-view .quiz-sub {
+  color: var(--gold-faint);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 36px;
+  opacity: 0.6;
+}
+#escape-quiz-view .quiz-question {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border-left: 2px solid var(--gold-dim);
+  background: rgba(139,105,20,0.05);
+}
+#escape-quiz-view .quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+#escape-quiz-view .quiz-option {
+  background: rgba(15,10,10,0.8);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  line-height: 1.6;
+  transition: all .2s;
+}
+#escape-quiz-view .quiz-option:hover {
+  border-color: var(--gold-dim);
+  background: rgba(30,20,10,0.5);
+}
+#escape-quiz-view .quiz-option.selected {
+  border-color: var(--gold);
+  background: rgba(139,105,20,0.2);
+  color: var(--gold);
+}
+#escape-quiz-view .quiz-option.correct {
+  border-color: var(--green);
+  background: rgba(74,138,80,0.2);
+  color: #8f8;
+}
+#escape-quiz-view .quiz-option.wrong {
+  border-color: var(--red);
+  background: rgba(90,128,176,.2);
+  color: #8af;
+}
+#escape-quiz-view .quiz-option:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+#escape-quiz-view .quiz-result {
+  text-align: center;
+  margin: 20px 0;
+  font-size: 13px;
+  line-height: 2;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+#escape-quiz-view .quiz-result .pass {
+  color: var(--gold);
+  font-weight: bold;
+}
+#escape-quiz-view .quiz-result .fail {
+  color: var(--red);
+}
+#escape-quiz-view .quiz-btn {
+  background: rgba(139,105,20,0.2);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 10px 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  letter-spacing: 2px;
+  transition: all .3s;
+  align-self: center;
+  margin-top: 16px;
+}
+#escape-quiz-view .quiz-btn:hover {
+  background: rgba(139,105,20,0.35);
+}
+#escape-quiz-view .quiz-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+#escape-quiz-view .quiz-progress .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold-faint);
+  opacity: 0.3;
+}
+#escape-quiz-view .quiz-progress .dot.done {
+  opacity: 0.6;
+  background: var(--gold-dim);
+}
+#escape-quiz-view .quiz-progress .dot.current {
+  opacity: 1;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(212,168,67,0.5);
+}
+#escape-quiz-view .quiz-progress .dot.wrong {
+  opacity: 0.8;
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(192,60,60,0.5);
+}
+@media (max-width: 600px) {
+  #escape-quiz-view { padding: 32px 16px; }
+  #escape-quiz-view .quiz-question { font-size: 13px; padding: 14px 16px; }
+  #escape-quiz-view .quiz-option { font-size: 12px; padding: 10px 16px; }
+  #escape-quiz-view .review-story-btn { margin-top: 16px; }
+}
+
 /* ===== 催眠文字脉冲动画 ===== */
 @keyframes hypno-pulse {
   from { opacity: 0; transform: scale(1.3); letter-spacing: 20px; }
@@ -1322,6 +1463,8 @@ body[data-week="2"] #gate::before {
 </div>
 
 <!-- 逃离关卡·身份验证（在main之外，避免innerHTML替换时销毁） -->
+<div id="escape-quiz-view">
+  <div class="quiz-title">深 层 权 限 验 证</div>
   <div class="quiz-sub">深层权限验证 · 身份确认</div>
   <div class="quiz-progress" id="quiz-progress"></div>
   <div id="quiz-content"></div>
@@ -2217,6 +2360,75 @@ var PASSWORDS = {
   week1: 'zero2026',
   week2: 'zerotime'
 };
+
+// ===== 登录逻辑 =====
+var gate = document.getElementById('gate');
+var gateInput = document.getElementById('gate-input');
+var gateBtn = document.getElementById('gate-btn');
+var gateErr = document.getElementById('gate-err');
+
+gateBtn.addEventListener('click', tryUnlock);
+gateInput.addEventListener('keydown', function(e){
+  if(e.key === 'Enter') tryUnlock();
+});
+
+function tryUnlock(){
+  var val = gateInput.value.trim();
+  gateErr.textContent = '';
+
+  if(val === PASSWORDS.week1){
+    // 一周目：线性任务链，自动开始
+    state.week = 1;
+    state.missionIndex = 0;
+    gate.style.display = 'none';
+    document.body.removeAttribute('data-week');
+    document.getElementById('spiral-bg').classList.remove('week2');
+    setBgMode('default');
+    document.getElementById('main').style.display = 'flex';
+    document.getElementById('topbar-text').textContent = '时序管理局 · 招募测试';
+    startSequence();
+  } else if(val === PASSWORDS.week2){
+    // 二周目：直接触发Clock对话
+    state.week = 2;
+    gate.style.display = 'none';
+    document.body.setAttribute('data-week', '2');
+    document.getElementById('spiral-bg').classList.add('week2');
+    setBgMode('week2');
+    document.getElementById('main').style.display = 'flex';
+    document.getElementById('topbar-text').textContent = '时序管理局 · 深层模式';
+    // 显示过渡文字后直接进入Clock对话
+    showWeek2Transition();
+  } else {
+    gateErr.textContent = '密钥验证失败。请联系管理员。';
+    gateInput.value = '';
+    // 输入框微动效果
+    gateInput.style.transform = 'translateX(-3px)';
+    setTimeout(function(){ gateInput.style.transform = 'translateX(3px)'; }, 50);
+    setTimeout(function(){ gateInput.style.transform = 'translateX(0)'; }, 100);
+  }
+}
+
+// ===== 引导页逻辑 =====
+var introPage = document.getElementById('intro-page');
+var introBtn = document.getElementById('intro-btn');
+// 初始状态：显示引导页，隐藏登录和主界面
+introPage.style.display = 'flex';
+document.getElementById('gate').style.display = 'none';
+document.getElementById('main').style.display = 'none';
+
+introBtn.addEventListener('click', function(){
+  introPage.style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
+  // 在用户手势内创建 AudioContext 并立即启动 BGM（移动端必须在手势内）
+  if(!bgmCtx){
+    try {
+      bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e){}
+  }
+  try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
+  setBGMMode('default');
+});
 
 // ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
 var bgmCtx = null;
@@ -3194,8 +3406,10 @@ function processText(text){
 var reviewSave = null; // {quizType: 'puzzle'|'escape', quizEl, narrativeEl}
 
 function enterReviewMode(quizType){
-  // 记录是哪个答题界面（puzzle / reasoning 共用 puzzle-view）
-  var quizEl = document.getElementById('puzzle-view');
+  // 记录是哪个答题界面（puzzle / escape / reasoning 共用 puzzle-view）
+  var quizEl = (quizType === 'puzzle' || quizType === 'reasoning')
+    ? document.getElementById('puzzle-view')
+    : document.getElementById('escape-quiz-view');
   reviewSave = {quizType: quizType, quizEl: quizEl};
 
   // 隐藏答题，显示故事
@@ -3433,8 +3647,163 @@ function showHotspotContent(id){
 }
 
 // ===== 逃离关卡 · 身份验证 =====
+var ESCAPE_QUIZ = [
+  {
+    question: '在伦敦舰队街14号，你碰到地球仪时，它对你说的第一句话是？',
+    options: [
+      {text: '"欢迎回来。"', correct: true},
+      {text: '"你终于来了。"', correct: false},
+      {text: '"又见面了。"', correct: false}
+    ]
+  },
+  {
+    question: '上海百乐门，你走出大门后低头看路面水洼——你的倒影在做什么？',
+    options: [
+      {text: '朝你挥手', correct: false},
+      {text: '在微笑', correct: true},
+      {text: '在流泪', correct: false}
+    ]
+  },
+  {
+    question: '新宿地下B7实验室里，那个父亲说你以为自己在收集——实际上你在做什么？',
+    options: [
+      {text: '在被监视', correct: false},
+      {text: '在被收集', correct: true},
+      {text: '在被测试', correct: false}
+    ]
+  }
+];
 
+var quizState = {qIndex: 0, passed: true};
 
+function showEscapeQuiz(){
+  document.getElementById('ending-view').style.display = 'none';
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('clue-view').style.display = 'none';
+  document.getElementById('hypno-layer') && (document.getElementById('hypno-layer').style.display = 'none');
+
+  quizState.qIndex = 0;
+  quizState.passed = true;
+
+  var main = document.getElementById('main');
+  // 确保main正确显示
+  main.style.display = 'flex';
+  main.style.flexDirection = 'column';
+
+  var qv = document.getElementById('escape-quiz-view');
+  qv.style.display = 'flex';
+
+  // 回顾故事按钮
+  var reviewBtn = document.getElementById('escape-review-btn');
+  reviewBtn.onclick = function(){ enterReviewMode('escape'); };
+
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion(){
+  var i = quizState.qIndex;
+  var questions = ESCAPE_QUIZ;
+  var qv = document.getElementById('escape-quiz-view');
+
+  // 进度点
+  var progress = document.getElementById('quiz-progress');
+  progress.innerHTML = '';
+  questions.forEach(function(q, idx){
+    var dot = document.createElement('span');
+    dot.className = 'dot';
+    if(idx < i) dot.classList.add('done');
+    else if(idx === i) dot.classList.add('current');
+    progress.appendChild(dot);
+  });
+
+  var content = document.getElementById('quiz-content');
+  content.innerHTML =
+    '<div class="quiz-question">' + (i + 1) + '/3 · ' + questions[i].question + '</div>' +
+    '<div class="quiz-options" id="quiz-options"></div>';
+
+  var optsDiv = document.getElementById('quiz-options');
+  questions[i].options.forEach(function(opt, oi){
+    var btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = String.fromCharCode(65 + oi) + '. ' + opt.text;
+    btn.addEventListener('click', function(){
+      handleQuizAnswer(opt.correct, btn);
+    });
+    optsDiv.appendChild(btn);
+  });
+}
+
+function handleQuizAnswer(correct, btn){
+  var options = document.querySelectorAll('.quiz-option');
+  var i = quizState.qIndex;
+
+  // 禁用所有选项
+  options.forEach(function(o){ o.disabled = true; });
+
+  // 标记正误
+  var correctBtn = null;
+  options.forEach(function(o, oi){
+    if(ESCAPE_QUIZ[i].options[oi].correct){
+      correctBtn = o;
+    }
+  });
+
+  if(correct){
+    btn.classList.add('selected', 'correct');
+    // 更新进度点
+    var dots = document.querySelectorAll('#quiz-progress .dot');
+    if(dots[i]){ dots[i].classList.remove('current'); dots[i].classList.add('done'); }
+  } else {
+    btn.classList.add('wrong');
+    if(correctBtn) correctBtn.classList.add('correct');
+    quizState.passed = false;
+    // 更新进度点
+    var dots = document.querySelectorAll('#quiz-progress .dot');
+    if(dots[i]){ dots[i].classList.remove('current'); dots[i].classList.add('wrong'); }
+  }
+
+  // 显示结果
+  var content = document.getElementById('quiz-content');
+  var resultDiv = document.createElement('div');
+  resultDiv.className = 'quiz-result';
+
+  if(correct){
+    resultDiv.innerHTML = '<span class="pass">✓ 验证通过</span>';
+  } else {
+    resultDiv.innerHTML = '<span class="fail">✗ 验证失败</span>\n正确答案：' + ESCAPE_QUIZ[i].options.filter(function(o){ return o.correct; })[0].text;
+  }
+  content.appendChild(resultDiv);
+
+  // 下一题按钮
+  var nextBtn = document.createElement('button');
+  nextBtn.className = 'quiz-btn';
+  if(i < ESCAPE_QUIZ.length - 1){
+    nextBtn.textContent = '下一题 →';
+    nextBtn.addEventListener('click', function(){
+      quizState.qIndex++;
+      renderQuizQuestion();
+    });
+  } else {
+    // 最后一题
+    if(quizState.passed){
+      nextBtn.textContent = '进 入 深 层 模 式';
+      nextBtn.addEventListener('click', function(){
+        var rb = document.getElementById('review-back-btn'); if(rb) rb.remove();
+        document.getElementById('escape-quiz-view').style.display = 'none';
+        showWeek2Transition();
+      });
+    } else {
+      nextBtn.textContent = '返 回';
+      nextBtn.addEventListener('click', function(){
+        var rb = document.getElementById('review-back-btn'); if(rb) rb.remove();
+        document.getElementById('escape-quiz-view').style.display = 'none';
+        // 恢复汇聚结局页面
+        document.getElementById('ending-view').style.display = '';
+      });
+    }
+  }
+  content.appendChild(nextBtn);
+}
 
 // ===== 推理验证关卡（真结局路径）=====
 function showReasoningQuiz(){
@@ -3481,11 +3850,6 @@ function showReasoningQuiz(){
 
   function checkAnswer(){
     var val = inputEl.value.trim().toLowerCase();
-    // 调试密码 zero000：最高权限激活
-    if(val === 'zero000'){
-      if(typeof window.activateDebug === 'function') window.activateDebug();
-      return;
-    }
     if(!val){
       errEl.textContent = '输入你的答案。';
       return;
@@ -3599,9 +3963,13 @@ function showZeroUnlockQuiz(){
     if(correct){
       pv.style.display = 'none';
       clearCountdown();
-      // 设置跳转目标，由 renderClockDialogue 消费
-      window.gTargetStepId = 'zero_clue';
-      startClockDialogue();
+      for(var si = 0; si < dialogueSteps.length; si++){
+        if(dialogueSteps[si].id === 'zero_clue'){
+          clockStep = si;
+          break;
+        }
+      }
+      renderClockDialogue();
     } else {
       if(dots[attempts]) dots[attempts].className = 'dot wrong';
       attempts++;
@@ -3825,6 +4193,10 @@ function showConvergenceEnding(){
         'background:rgba(139,105,20,0.15);border:1px solid var(--gold-dim);color:var(--gold-faint);' +
         'padding:10px 24px;border-radius:4px;cursor:pointer;font-size:11px;font-family:inherit;letter-spacing:2px;' +
         'transition:all .3s;">查 看 线 索 档 案</button>' +
+        '<button id="conv-escape-btn" style="' +
+        'background:rgba(74,40,40,0.3);border:1px solid var(--red-dim);color:var(--red);' +
+        'padding:12px 32px;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;letter-spacing:3px;' +
+        'transition:all .3s;">深 层 权 限 验 证</button>' +
         '<button id="conv-restart-btn" style="' +
         'background:rgba(139,105,20,0.2);border:1px solid var(--gold-dim);color:var(--gold);' +
         'padding:10px 28px;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;letter-spacing:2px;' +
@@ -3832,6 +4204,7 @@ function showConvergenceEnding(){
       '</div>';
 
     document.getElementById('conv-clue-btn').addEventListener('click', showClueReview);
+    document.getElementById('conv-escape-btn').addEventListener('click', showEscapeQuiz);
     document.getElementById('conv-restart-btn').addEventListener('click', function(){
       location.reload();
     });
@@ -3947,12 +4320,6 @@ function startClockDialogue(){
   nv.style.display = 'flex';
   renderClockDialogue();
 }
-
-// 全局对话步骤（供外部访问）
-var gDialogueSteps = null;
-
-// 外部跳转目标（showZeroUnlockQuiz 设置，renderClockDialogue 消费）
-var gTargetStepId = null;
 
 function renderClockDialogue(){
   var nv = document.getElementById('narrative-view');
@@ -4075,7 +4442,7 @@ function renderClockDialogue(){
             '"{{gold|所以他说的每一个字——都是在**诱导你**。不是在告诉你真相。是在**塑造**你想要听到的真相。}}"\n\n' +
             '沉默。三秒。\n\n' +
             '然后破球转向你。光带的颜色从红色变成了**金黄色**——这是第一次。\n\n' +
-            '"{{gold|你。他们说你是"找朋友的人"。}}"\n\n' +
+            '"{{gold|宿主。他们说你是"找朋友的人"。}}"\n\n' +
             '"{{gold|但其实——**你是被从你朋友的身体里，抽出来的一个碎片**。}}"\n\n' +
             '{{po|你说不出话。不是因为恐惧。是因为——你的身体**在确认这句话**。}}\n\n' +
             '"{{gold|夜行者。你的朋友。他的意识太强了——强到零号计划的系统没法直接覆盖他。}}"\n\n' +
@@ -4095,7 +4462,7 @@ function renderClockDialogue(){
             '{{po|你想动。但你的四肢——不，你的**每一个细胞**——都在拒绝这个真相。}}\n\n' +
             '{{po|不是纳米颗粒。是**你自己的身体在害怕**。怕自己不是"自己"。}}',
       choices: [],
-      autoNext: 'three_choices_truth'
+      autoNext: 'three_choices'
     },
     // 密码失败 → 时钟失望 → 接回 three_choices
     {
@@ -4195,24 +4562,6 @@ function renderClockDialogue(){
         {text: '你不说话了。你在消化他说的一切', tag: 'silence'}
       ]
     },
-    // 第3.5步：破球揭示真相后的选择（真结局路线）
-    {
-      id: 'three_choices_truth',
-      text: '灯没有再亮。\n\n' +
-            '怀表的秒针声停在黑暗里，像一根**没有拨完的弦**。\n\n' +
-            '"{{red|……你听到了。}}"\n\n' +
-            '时钟的声音第一次**没有节奏**。像是一个排练了无数遍的剧本，'
-            '被人在最后一刻撕掉了一页。\n\n' +
-            '"{{red|破球告诉你的——是真相。但真相不等于全貌。}}"\n\n' +
-            '他从黑暗里拿出时间倒流器。三个格子，两个还亮着。\n\n' +
-            '"{{red|拿着。不管你怎么选——它能让你多一条退路。}}"\n\n' +
-            '{{po|他在帮你。还是在给你一个"看起来像选择"的错觉？}}',
-      choices: [
-        {text: '"……我加入。" — 跟着时钟走', tag: 'join'},
-        {text: '"我拒绝。" — 信破球，走暗门', tag: 'resist'},
-        {text: '"……我需要想想。" — 沉默', tag: 'spare'}
-      ]
-    },
     {
       id: 'three_choices',
       text: '时钟看了你一眼。不是审视——是确认。像是在确认一件他早就猜到的事。\n\n' +
@@ -4235,12 +4584,11 @@ function renderClockDialogue(){
       ]
     },
     // 第4步：破球介入（切断系统 → 甩数据 → 指示暗门位置）
-    // 注意：如果玩家已经通过 zelo_true_truth，灯已经灭了，这里不再重复"灯灭了"
     {
       id: 'zelo_intervention',
-      text: '灯没有再亮起来。\n\n' +
-            '房间里的黑暗没有散去。天花板、面板、时钟身后那面半透明的屏幕——还是黑的。\n\n' +
-            '你肩膀旁边的黑色金属球还在。红色光带在它外壳上缓缓旋转。\n\n' +
+      text: '灯灭了。\n\n' +
+            '不是一盏——是所有的。天花板、面板、时钟身后那面半透明的屏幕——全黑了。\n\n' +
+            '房间里只剩一个光源：一颗悬浮在你肩膀旁边的黑色金属球。红色光带在它外壳上缓缓旋转。\n\n' +
             '时钟摘下单片眼镜，折好，放进口袋。\n\n' +
             '"{{red|……泽罗。}}"\n\n' +
             '不是招呼。是在念一份旧报告上的名字。\n\n' +
@@ -4252,7 +4600,7 @@ function renderClockDialogue(){
             '沉默持续了三秒。不是争辩的那种沉默——是等对面说完的那种。\n\n' +
             '"{{gold|我还有更多。但我不想浪费数据了。}}"\n\n' +
             '破球退到你肩膀上方。光带闪了一次——不是威胁。是通知。\n\n' +
-            '{{po|"我在走廊尽头的暗门。"}}——这句话只进了你的脑子，没进房间。\n\n' +
+            '{{po|"宿主在走廊尽头的暗门。"}}——这句话只进了你的脑子，没进房间。\n\n' +
             '时钟靠回椅背。他伸手——把怀表翻过来，表盘朝下，轻轻放在桌上。\n\n' +
             '"{{red|……走吧。}}"\n\n' +
             '秒针压在桌面和表盖之间。还在走，但你看不到了。\n',
@@ -4268,17 +4616,6 @@ function renderClockDialogue(){
     // 所有对话结束，直接触发结尾
     endClockPath();
     return;
-  }
-
-  // 消费 gTargetStepId
-  if(window.gTargetStepId){
-    for(var si = 0; si < dialogueSteps.length; si++){
-      if(dialogueSteps[si].id === window.gTargetStepId){
-        clockStep = si;
-        break;
-      }
-    }
-    window.gTargetStepId = null;
   }
 
   var step = dialogueSteps[clockStep];
@@ -4348,7 +4685,7 @@ function renderClockDialogue(){
       }
       // zero_clue 步骤的两个选项
       if(c.tag === 'accept_quiz'){
-        // 启动推理验证关卡
+        // 启动推理验证关卡（替换原showEscapeQuiz）
         showReasoningQuiz();
         return;
       }
@@ -4453,7 +4790,7 @@ function renderZeloScene(){
             '"跟上来。\n\n' +
             '只说了这两个字。然后转身走在前面。\n\n' +
             '破球飘到他肩膀上方。\n\n' +
-            '"{{gold|你，他的神经匹配度比上一轮高了三个点。}}"\n\n' +
+            '"{{gold|宿主，他的神经匹配度比上一轮高了三个点。}}"\n\n' +
             '"我没有问。"\n\n' +
             '"{{gold|我只是在陈述事实。}}"\n\n' +
             '"我没记错的话——上次让你闭嘴的时候你还没学会\'事实\'这个词。"\n\n' +
@@ -4694,7 +5031,7 @@ function showClockForcedModification(){
   textDiv.className = 'text';
   textDiv.innerHTML = processText(
     '破球的光带在你身后闪了一下——然后退回了暗处。\n\n' +
-    '{{po|"我。"}}——那句话没说出来。\n\n' +
+    '{{po|"宿主。"}}——那句话没说出来。\n\n' +
     '时钟把怀表翻回来。表盘朝上。秒针还在走。\n\n' +
     '"{{red|你回来了。}}"\n\n' +
     '他没有问为什么。只是看着你。\n\n' +
@@ -4744,7 +5081,7 @@ function showRefuseBothPath(){
   textDiv.innerHTML = processText(
     '暗门那边——泽罗的卡其色斗篷转了一下。然后消失了。\n\n' +
     '破球的光带最后闪了一次。\n\n' +
-    '{{po|"我。他不来。"}}——那句话没进你的脑子。你已经转身了。\n\n' +
+    '{{po|"宿主。他不来。"}}——那句话没进你的脑子。你已经转身了。\n\n' +
     '你跑。\n\n' +
     '走廊是一条又一条。日光灯嗡嗡响。门牌号在余光里闪过——B-12、B-17、B-21。你不知道哪条路通向出口。你只是不想停下来。\n\n' +
     '你拐了三个弯。或者四个。你不确定。\n\n' +
@@ -5080,175 +5417,6 @@ if(typeof MISSIONS === 'undefined'){
 }
 
 })();
-
-// ===== 调试模式：密码 zero000 · 最高权限 =====
-(function(){
-  var seq = '';
-  var PW = 'zero000';
-  var active = false;
-
-  // 也支持 URL 参数 ?debug=zero000
-  try {
-    var params = new URLSearchParams(location.search);
-    if(params.get('debug') === 'zero000') activateDebug();
-  } catch(e){}
-
-  function activateDebug(){
-    active = true;
-    var s = window.state || (window.state = {});
-
-    // 解锁全部状态
-    s.week = 2;
-    s.debugMode = true;
-    s.cluesAvailable = true;
-    s.exploredHotspots = s.exploredHotspots || {};
-    ['w1_E','s2_R','u3_O','r4_Z'].forEach(function(k){ s.exploredHotspots[k] = true; });
-    if(s.missionOrder) s.missionOrder.forEach(function(k){ s.completedMissions[k] = true; });
-
-    // 强制关掉催眠层
-    var hypno = document.getElementById('hypno-layer');
-    if(hypno) hypno.style.display = 'none';
-    // 停掉所有 setTimeout
-    try { var t = setTimeout(function(){}); for(var i=0;i<t;i++) clearTimeout(i); } catch(e){}
-
-    // 通知
-    var notice = document.createElement('div');
-    notice.id = 'debug-notice';
-    notice.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(212,168,67,0.95);color:#000;padding:10px 28px;border-radius:6px;font-size:13px;font-family:inherit;z-index:99999;letter-spacing:2px;box-shadow:0 4px 24px rgba(212,168,67,0.4);';
-    notice.textContent = '⚡ 最高权限已激活 · 所有内容已解锁';
-    document.body.appendChild(notice);
-    setTimeout(function(){ notice.style.transition='opacity 1s'; notice.style.opacity='0'; setTimeout(function(){notice.remove();},1000); }, 3500);
-
-    // 直接进 Clock 对话
-    setTimeout(function(){
-      var ms = document.getElementById('mission-select');
-      var nv = document.getElementById('narrative-view');
-      if(ms && nv){
-        ms.style.display = 'none';
-        document.getElementById('main').style.display = 'flex';
-        if(typeof startClockDialogue === 'function'){
-          window.clockStep = 0;
-          startClockDialogue();
-        }
-      }
-    }, 600);
-
-    showDebugPanel();
-  }
-
-  // 暴露给全局，供密码框调用
-  window.activateDebug = activateDebug;
-
-  function showDebugPanel(){
-    if(document.getElementById('debug-panel')) return;
-    var panel = document.createElement('div');
-    panel.id = 'debug-panel';
-    panel.style.cssText = 'position:fixed;bottom:16px;right:16px;background:rgba(6,10,16,0.97);border:1px solid rgba(212,168,67,0.3);border-radius:8px;padding:14px;z-index:9998;color:#c8a850;font-size:12px;font-family:inherit;min-width:170px;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
-
-    var title = document.createElement('div');
-    title.style.cssText = 'letter-spacing:2px;margin-bottom:10px;font-size:12px;color:rgba(212,168,67,0.7);';
-    title.textContent = '⚡ 最高权限 · 调试面板';
-    panel.appendChild(title);
-
-    var actions = [
-      {label:'跳过 → Clock对话', fn: skipToClock},
-      {label:'解锁全部内容', fn: unlockAll},
-      {label:'查看所有结局', fn: viewEndings},
-      {label:'重新加载', fn: function(){ location.reload(); }}
-    ];
-
-    actions.forEach(function(a){
-      var btn = document.createElement('button');
-      btn.textContent = a.label;
-      btn.style.cssText = 'display:block;width:100%;margin:5px 0;padding:7px 10px;background:rgba(139,105,20,0.12);border:1px solid rgba(212,168,67,0.2);color:#c8a850;border-radius:4px;cursor:pointer;font-size:11px;font-family:inherit;letter-spacing:1px;transition:all .2s;text-align:left;';
-      btn.onmouseenter = function(){ btn.style.background='rgba(139,105,20,0.3)'; };
-      btn.onmouseleave = function(){ btn.style.background='rgba(139,105,20,0.12)'; };
-      btn.onclick = a.fn;
-      panel.appendChild(btn);
-    });
-
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = '× 关闭面板';
-    closeBtn.style.cssText = 'display:block;width:100%;margin-top:10px;padding:5px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border-radius:4px;cursor:pointer;font-size:10px;font-family:inherit;';
-    closeBtn.onclick = function(){ panel.remove(); };
-    panel.appendChild(closeBtn);
-
-    document.body.appendChild(panel);
-  }
-
-  function skipToClock(){
-    ['mission-select','narrative-view','ending-view','puzzle-view','hypno-layer','escape-quiz-view'].forEach(function(id){
-      var el = document.getElementById(id); if(el) el.style.display = 'none';
-    });
-    document.getElementById('main').style.display = 'flex';
-    if(typeof startClockDialogue === 'function'){
-      window.clockStep = 0;
-      startClockDialogue();
-    }
-  }
-
-  function unlockAll(){
-    var s = window.state || (window.state = {});
-    s.week = 2;
-    s.debugMode = true;
-    s.cluesAvailable = true;
-    s.exploredHotspots = s.exploredHotspots || {};
-    ['w1_E','s2_R','u3_O','r4_Z'].forEach(function(k){ s.exploredHotspots[k] = true; });
-    if(s.missionOrder) s.missionOrder.forEach(function(k){ s.completedMissions[k] = true; });
-    var hypno = document.getElementById('hypno-layer');
-    if(hypno) hypno.style.display = 'none';
-    alert('✓ 已解锁全部内容 · Z/E/R/O 收集完成 · 二周目模式已激活 · 催眠序列已跳过');
-  }
-
-  function viewEndings(){
-    ['mission-select','narrative-view','puzzle-view','hypno-layer'].forEach(function(id){
-      var el = document.getElementById(id); if(el) el.style.display = 'none';
-    });
-    var ev = document.getElementById('ending-view');
-    if(ev) ev.style.display = 'flex';
-    if(typeof showEnding === 'function' && !ev.querySelector('.ending-title')){
-      showEnding();
-    }
-  }
-
-  // ===== 按钮事件绑定（IIFE 内部，直接访问 tryUnlock 等函数）=====
-  var _introBtn = document.getElementById('intro-btn');
-  var _gateBtn = document.getElementById('gate-btn');
-  var _gateInput = document.getElementById('gate-input');
-
-  // intro-btn：进入游戏
-  function handleIntroClick(){
-    document.getElementById('intro-page').style.display = 'none';
-    document.getElementById('gate').style.display = 'flex';
-    setTimeout(function(){ _gateInput.focus(); }, 100);
-    if(!bgmCtx){
-      try { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
-    }
-    try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
-    setBGMMode('default');
-  }
-  _introBtn.addEventListener('click', handleIntroClick);
-  // 手机端：touchstart 直接调用，避免 300ms 延迟
-  _introBtn.addEventListener('touchstart', function(e){
-    e.preventDefault(); e.stopPropagation();
-    handleIntroClick();
-  }, {passive: false});
-
-  // gate-btn：密码解锁
-  _gateBtn.addEventListener('click', tryUnlock);
-  // 手机端
-  _gateBtn.addEventListener('touchstart', function(e){
-    e.preventDefault(); e.stopPropagation();
-    tryUnlock();
-  }, {passive: false});
-
-  // gate-input：回车解锁
-  _gateInput.addEventListener('keydown', function(e){
-    if(e.key === 'Enter') tryUnlock();
-  });
-
-})();
-
 </script>
 
 <!-- 线索档案视图 -->
