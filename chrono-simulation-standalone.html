@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>时空模拟 · 时序管理局招募测试</title>
 <style>
 :root{
@@ -4305,6 +4305,11 @@ var pendingClockChoice = null;  // 暂存玩家在第三步的原始选择
 function startClockDialogue(){
   clockStep = 0;
   setBGMMode('clock');
+
+  // 清除 showWeek2Transition 留下的内联样式，让 CSS 重新接管 main 的布局
+  // 否则移动端 main 的 height/flex 计算会异常，导致 narrative-view 高度为 0
+  var main = document.getElementById('main');
+  main.style.cssText = '';
 
   // 移除过渡动画的overlay（它占着flex空间，必须清理）
   var transOverlay = document.getElementById('week2-transition-overlay');
