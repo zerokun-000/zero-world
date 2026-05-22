@@ -206,23 +206,23 @@ body {
   color: var(--gold);
   font-size: 24px;
   letter-spacing: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   text-shadow: 0 0 20px rgba(212,168,67,.3);
 }
 #gate .sub {
   color: var(--gold-dim);
   font-size: 12px;
   letter-spacing: 3px;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 #gate input {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--gold);
-  padding: 12px 20px;
-  font-size: 16px;
-  width: 260px;
+  padding: 10px 16px;
+  font-size: 15px;
+  width: 240px;
   text-align: center;
   outline: none;
   font-family: inherit;
@@ -234,14 +234,14 @@ body {
   box-shadow: 0 0 15px rgba(212,168,67,.2);
 }
 #gate button {
-  margin-top: 16px;
+  margin-top: 12px;
   background: rgba(139,105,20,.3);
   border: 1px solid var(--gold-dim);
   color: var(--gold);
-  padding: 12px 40px;
+  padding: 10px 36px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-family: inherit;
   letter-spacing: 2px;
   transition: all .3s;
@@ -253,15 +253,15 @@ body {
 }
 #gate .err {
   color: var(--red);
-  font-size: 12px;
-  margin-top: 10px;
-  min-height: 18px;
+  font-size: 11px;
+  margin-top: 8px;
+  min-height: 16px;
   letter-spacing: 1px;
 }
 #gate .hint {
   color: var(--gold-faint);
-  font-size: 11px;
-  margin-top: 24px;
+  font-size: 10px;
+  margin-top: 14px;
   letter-spacing: 1px;
 }
 
@@ -708,8 +708,11 @@ body[data-week="2"] #gate::before {
   }
   #intro-page .intro-title { font-size: 17px; letter-spacing: 4px; }
   #intro-page .intro-btn { padding: 14px 40px; min-height: 48px; }
-  #gate h1 { font-size: 20px; letter-spacing: 4px; }
-  #gate input { width: 80vw; max-width: 300px; font-size: 15px; padding: 14px 16px; }
+  #gate h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; }
+  #gate .sub { margin-bottom: 16px; }
+  #gate input { width: 80vw; max-width: 260px; font-size: 15px; padding: 10px 14px; }
+  #gate button { margin-top: 10px; padding: 10px 32px; }
+  #gate .hint { margin-top: 12px; }
   .topbar-text { font-size: 9px; letter-spacing: 2px; }
   .mission-grid {
     grid-template-columns: 1fr;
