@@ -2233,6 +2233,12 @@ function tryUnlock(){
   var val = gateInput.value.trim();
   gateErr.textContent = '';
 
+  // 调试密码 zero000：最高权限激活
+  if(val === 'zero000'){
+    if(typeof window.activateDebug === 'function') window.activateDebug();
+    return;
+  }
+
   if(val === PASSWORDS.week1){
     // 一周目：线性任务链，自动开始
     state.week = 1;
@@ -3550,6 +3556,11 @@ function showReasoningQuiz(){
 
   function checkAnswer(){
     var val = inputEl.value.trim().toLowerCase();
+    // 调试密码 zero000：最高权限激活
+    if(val === 'zero000'){
+      if(typeof window.activateDebug === 'function') window.activateDebug();
+      return;
+    }
     if(!val){
       errEl.textContent = '输入你的答案。';
       return;
@@ -5119,18 +5130,6 @@ if(typeof MISSIONS === 'undefined'){
   var PW = 'zero000';
   var active = false;
 
-  // 键盘监听：输入 zero000 激活
-  document.addEventListener('keydown', function(e){
-    if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey){
-      seq += e.key.toLowerCase();
-      if(seq.length > PW.length) seq = seq.slice(-PW.length);
-      if(seq === PW){
-        seq = '';
-        if(!active) activateDebug();
-      }
-    }
-  });
-
   // 也支持 URL 参数 ?debug=zero000
   try {
     var params = new URLSearchParams(location.search);
@@ -5179,6 +5178,9 @@ if(typeof MISSIONS === 'undefined'){
 
     showDebugPanel();
   }
+
+  // 暴露给全局，供密码框调用
+  window.activateDebug = activateDebug;
 
   function showDebugPanel(){
     if(document.getElementById('debug-panel')) return;
