@@ -5112,6 +5112,150 @@ if(typeof MISSIONS === 'undefined'){
 }
 
 })();
+
+// ===== 调试模式：密码 zero000 · 最高权限 =====
+(function(){
+  var seq = '';
+  var PW = 'zero000';
+  var active = false;
+
+  // 键盘监听：输入 zero000 激活
+  document.addEventListener('keydown', function(e){
+    if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+      seq += e.key.toLowerCase();
+      if(seq.length > PW.length) seq = seq.slice(-PW.length);
+      if(seq === PW){
+        seq = '';
+        if(!active) activateDebug();
+      }
+    }
+  });
+
+  // 也支持 URL 参数 ?debug=zero000
+  try {
+    var params = new URLSearchParams(location.search);
+    if(params.get('debug') === 'zero000') activateDebug();
+  } catch(e){}
+
+  function activateDebug(){
+    active = true;
+    var s = window.state || (window.state = {});
+
+    // 解锁全部状态
+    s.week = 2;
+    s.debugMode = true;
+    s.cluesAvailable = true;
+    s.exploredHotspots = s.exploredHotspots || {};
+    ['w1_E','s2_R','u3_O','r4_Z'].forEach(function(k){ s.exploredHotspots[k] = true; });
+    if(s.missionOrder) s.missionOrder.forEach(function(k){ s.completedMissions[k] = true; });
+
+    // 强制关掉催眠层
+    var hypno = document.getElementById('hypno-layer');
+    if(hypno) hypno.style.display = 'none';
+    // 停掉所有 setTimeout
+    try { var t = setTimeout(function(){}); for(var i=0;i<t;i++) clearTimeout(i); } catch(e){}
+
+    // 通知
+    var notice = document.createElement('div');
+    notice.id = 'debug-notice';
+    notice.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(212,168,67,0.95);color:#000;padding:10px 28px;border-radius:6px;font-size:13px;font-family:inherit;z-index:99999;letter-spacing:2px;box-shadow:0 4px 24px rgba(212,168,67,0.4);';
+    notice.textContent = '⚡ 最高权限已激活 · 所有内容已解锁';
+    document.body.appendChild(notice);
+    setTimeout(function(){ notice.style.transition='opacity 1s'; notice.style.opacity='0'; setTimeout(function(){notice.remove();},1000); }, 3500);
+
+    // 直接进 Clock 对话
+    setTimeout(function(){
+      var ms = document.getElementById('mission-select');
+      var nv = document.getElementById('narrative-view');
+      if(ms && nv){
+        ms.style.display = 'none';
+        document.getElementById('main').style.display = 'flex';
+        if(typeof startClockDialogue === 'function'){
+          window.clockStep = 0;
+          startClockDialogue();
+        }
+      }
+    }, 600);
+
+    showDebugPanel();
+  }
+
+  function showDebugPanel(){
+    if(document.getElementById('debug-panel')) return;
+    var panel = document.createElement('div');
+    panel.id = 'debug-panel';
+    panel.style.cssText = 'position:fixed;bottom:16px;right:16px;background:rgba(6,10,16,0.97);border:1px solid rgba(212,168,67,0.3);border-radius:8px;padding:14px;z-index:9998;color:#c8a850;font-size:12px;font-family:inherit;min-width:170px;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+
+    var title = document.createElement('div');
+    title.style.cssText = 'letter-spacing:2px;margin-bottom:10px;font-size:12px;color:rgba(212,168,67,0.7);';
+    title.textContent = '⚡ 最高权限 · 调试面板';
+    panel.appendChild(title);
+
+    var actions = [
+      {label:'跳过 → Clock对话', fn: skipToClock},
+      {label:'解锁全部内容', fn: unlockAll},
+      {label:'查看所有结局', fn: viewEndings},
+      {label:'重新加载', fn: function(){ location.reload(); }}
+    ];
+
+    actions.forEach(function(a){
+      var btn = document.createElement('button');
+      btn.textContent = a.label;
+      btn.style.cssText = 'display:block;width:100%;margin:5px 0;padding:7px 10px;background:rgba(139,105,20,0.12);border:1px solid rgba(212,168,67,0.2);color:#c8a850;border-radius:4px;cursor:pointer;font-size:11px;font-family:inherit;letter-spacing:1px;transition:all .2s;text-align:left;';
+      btn.onmouseenter = function(){ btn.style.background='rgba(139,105,20,0.3)'; };
+      btn.onmouseleave = function(){ btn.style.background='rgba(139,105,20,0.12)'; };
+      btn.onclick = a.fn;
+      panel.appendChild(btn);
+    });
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '× 关闭面板';
+    closeBtn.style.cssText = 'display:block;width:100%;margin-top:10px;padding:5px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border-radius:4px;cursor:pointer;font-size:10px;font-family:inherit;';
+    closeBtn.onclick = function(){ panel.remove(); };
+    panel.appendChild(closeBtn);
+
+    document.body.appendChild(panel);
+  }
+
+  function skipToClock(){
+    ['mission-select','narrative-view','ending-view','puzzle-view','hypno-layer','escape-quiz-view'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.style.display = 'none';
+    });
+    document.getElementById('main').style.display = 'flex';
+    if(typeof startClockDialogue === 'function'){
+      window.clockStep = 0;
+      startClockDialogue();
+    }
+  }
+
+  function unlockAll(){
+    var s = window.state || (window.state = {});
+    s.week = 2;
+    s.debugMode = true;
+    s.cluesAvailable = true;
+    s.exploredHotspots = s.exploredHotspots || {};
+    ['w1_E','s2_R','u3_O','r4_Z'].forEach(function(k){ s.exploredHotspots[k] = true; });
+    if(s.missionOrder) s.missionOrder.forEach(function(k){ s.completedMissions[k] = true; });
+    var hypno = document.getElementById('hypno-layer');
+    if(hypno) hypno.style.display = 'none';
+    alert('✓ 已解锁全部内容
+· Z/E/R/O 收集完成
+· 二周目模式已激活
+· 催眠序列已跳过');
+  }
+
+  function viewEndings(){
+    ['mission-select','narrative-view','puzzle-view','hypno-layer'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.style.display = 'none';
+    });
+    var ev = document.getElementById('ending-view');
+    if(ev) ev.style.display = 'flex';
+    if(typeof showEnding === 'function' && !ev.querySelector('.ending-title')){
+      showEnding();
+    }
+  }
+})();
+
 </script>
 
 <!-- 线索档案视图 -->
