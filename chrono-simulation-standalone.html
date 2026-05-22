@@ -4250,7 +4250,9 @@ function renderClockDialogue(){
             {text: '"什么测试？"', tag: 'ask_test', nextStepId: 'zero_plan_brief'}
           ];
           var hs = state.exploredHotspots || {};
-          if(hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']){
+          // 二周目自动解锁第3选项；一周目需收集4字母
+          var zeroUnlocked = ((hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']) || state.week === 2);
+          if(zeroUnlocked){
             c.push({text: '"我知道零号计划。"', tag: 'ask_zero', nextStepId: 'zero_clue'});
           }
           return c;
