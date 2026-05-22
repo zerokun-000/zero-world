@@ -2372,6 +2372,22 @@ gateInput.addEventListener('keydown', function(e){
   if(e.key === 'Enter') tryUnlock();
 });
 
+// ===== 工具函数 =====
+// 清除 main 的内联样式，让 CSS 重新接管布局（防止移动端高度计算异常）
+function resetMain(){
+  var main = document.getElementById('main');
+  if(main) main.style.cssText = '';
+}
+
+// 隐藏所有视图
+function hideAllViews(){
+  resetMain();
+  ['narrative-view','week2-view','ending-view','mission-select','gate','intro-page','clue-view','escape-quiz-view','hypno-layer','puzzle-view'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+}
+
 function tryUnlock(){
   var val = gateInput.value.trim();
   gateErr.textContent = '';
@@ -2380,20 +2396,22 @@ function tryUnlock(){
     // 一周目：线性任务链，自动开始
     state.week = 1;
     state.missionIndex = 0;
-    gate.style.display = 'none';
+    hideAllViews();
     document.body.removeAttribute('data-week');
     document.getElementById('spiral-bg').classList.remove('week2');
     setBgMode('default');
+    resetMain();
     document.getElementById('main').style.display = 'flex';
     document.getElementById('topbar-text').textContent = '时序管理局 · 招募测试';
     startSequence();
   } else if(val === PASSWORDS.week2){
     // 二周目：直接触发Clock对话
     state.week = 2;
-    gate.style.display = 'none';
+    hideAllViews();
     document.body.setAttribute('data-week', '2');
     document.getElementById('spiral-bg').classList.add('week2');
     setBgMode('week2');
+    resetMain();
     document.getElementById('main').style.display = 'flex';
     document.getElementById('topbar-text').textContent = '时序管理局 · 深层模式';
     // 显示过渡文字后直接进入Clock对话
@@ -3101,13 +3119,9 @@ function initMissionSelect(){
     grid.appendChild(card);
   });
 
-  // 显示任务选择，隐藏其他
+  // 隐藏所有视图，然后显示任务选择
+  hideAllViews();
   document.getElementById('mission-select').style.display = 'flex';
-  document.getElementById('narrative-view').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
-  if(document.getElementById('week2-view')){
-    document.getElementById('week2-view').style.display = 'none';
-  }
 }
 
 // ===== MISSIONS 元数据 =====
@@ -3133,10 +3147,8 @@ function startMission(key){
   var bgmMap = { winslow: 'london', shanghai: 'shanghai', underground: 'tokyo', rome_bath: 'rome' };
   setBGMMode(bgmMap[key] || 'default');
 
-  // 隐藏其他视图
-  document.getElementById('mission-select').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
-  document.getElementById('week2-view') && (document.getElementById('week2-view').style.display = 'none');
+  // 隐藏其他视图，然后显示叙事视图
+  hideAllViews();
   var nv = document.getElementById('narrative-view');
   nv.style.display = 'flex';
   nv.innerHTML = '';
@@ -3372,12 +3384,9 @@ function makeChoice(choice){
 
 // ===== 返回任务选择 =====
 window.backToMissions = function(){
-  document.getElementById('narrative-view').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
+  // 隐藏所有视图，然后显示任务选择
+  hideAllViews();
   document.getElementById('mission-select').style.display = 'flex';
-  if(document.getElementById('week2-view')){
-    document.getElementById('week2-view').style.display = 'none';
-  }
 };
 
 // ===== 处理文本（金色文字 + 批注 + 红色强调）=====
@@ -3508,9 +3517,8 @@ function clearCountdown(){
 }
 
 function showPuzzle(puzzleData){
-  document.getElementById('narrative-view').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
-
+  // 隐藏其他视图
+  hideAllViews();
   var pv = document.getElementById('puzzle-view');
   pv.style.display = 'flex';
 
@@ -3685,8 +3693,11 @@ function showEscapeQuiz(){
   quizState.qIndex = 0;
   quizState.passed = true;
 
+  hideAllViews();
+
+  // 先清除 main 历史内联样式，再设当前需要的样式
+  resetMain();
   var main = document.getElementById('main');
-  // 确保main正确显示
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
 
@@ -3808,9 +3819,7 @@ function handleQuizAnswer(correct, btn){
 // ===== 推理验证关卡（真结局路径）=====
 function showReasoningQuiz(){
   // 隐藏当前视图
-  document.getElementById('narrative-view').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
-
+  hideAllViews();
   var pv = document.getElementById('puzzle-view');
   pv.style.display = 'flex';
 
@@ -3908,9 +3917,7 @@ function showReasoningQuiz(){
 
 // ===== 零号计划解锁密码验证（点击第3选项时触发）=====
 function showZeroUnlockQuiz(){
-  document.getElementById('narrative-view').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
-
+  hideAllViews();
   var pv = document.getElementById('puzzle-view');
   pv.style.display = 'flex';
 
@@ -4077,15 +4084,11 @@ function showEnding(){
 // ===== 汇聚结局：催眠螺旋 + 最终臣服 =====
 function showConvergenceEnding(){
   setBGMMode('convergence');
+
+  // 隐藏所有视图并重置 main 内联样式
+  hideAllViews();
+
   var main = document.getElementById('main');
-
-  // 隐藏所有内部视图（不清空HTML）
-  document.getElementById('mission-select').style.display = 'none';
-  document.getElementById('ending-view').style.display = 'none';
-  document.getElementById('narrative-view').style.display = 'none';
-  document.getElementById('week2-view').style.display = 'none';
-  document.getElementById('puzzle-view').style.display = 'none';
-
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
   main.style.overflow = 'auto';
@@ -4873,7 +4876,9 @@ function renderZeloScene(){
 }
 
 function showZeloFinale(){
+  hideAllViews();
   var main = document.getElementById('main');
+  resetMain();
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
   main.innerHTML = '';
@@ -5126,7 +5131,9 @@ function showRefuseBothPath(){
 
 // ===== Clock强制改造 · 独立结局 =====
 function showClockEnding(){
+  hideAllViews();
   var main = document.getElementById('main');
+  resetMain();
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
   main.innerHTML = '';
@@ -5238,7 +5245,9 @@ function showClockTimeoutEnding(){
 
 // ===== Clock放过你：记忆清除 + 时间倒流器 =====
 function showClockSpareEnding(){
+  hideAllViews();
   var main = document.getElementById('main');
+  resetMain();
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
   main.innerHTML = '';
@@ -5294,7 +5303,9 @@ function showClockSpareEnding(){
 
 // ===== 最终结局展示 =====
 function showFinalEnding(choice){
+  hideAllViews();
   var main = document.getElementById('main');
+  resetMain();
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
   main.innerHTML = '';
