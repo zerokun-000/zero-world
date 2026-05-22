@@ -1401,7 +1401,7 @@ body[data-week="2"] #gate::before {
 从很深的地方传来钟表的滴答声。很轻，很远。
 
 你伸出手，去按镜片上那个唯一的按键。</div>
-  <button class="intro-btn" id="intro-btn">进 入</button>
+  <button class="intro-btn" id="intro-btn" onclick="document.getElementById('intro-page').style.display='none';document.getElementById('gate').style.display='flex';setTimeout(function(){document.getElementById('gate-input').focus();},100);">进 入</button>
   <div class="intro-hint">© 时序管理局 · 所有权利保留</div>
 </div>
 
@@ -2513,15 +2513,18 @@ var main = document.getElementById('main');
   }
 })();
 
-// 延迟绑定 introBtn，确保 DOM 完全就绪
-setTimeout(function(){
+// 绑定 introBtn（兼容移动端）
+(function bindIntroBtn(){
   var btn = document.getElementById('intro-btn');
   if(!btn) { console.log('[init] intro-btn not found'); return; }
-  btn.addEventListener('click', function(){
+  // 先去掉旧事件，防止重复绑定
+  var newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', function(){
     console.log('[introBtn] clicked');
     document.getElementById('intro-page').style.display = 'none';
     document.getElementById('gate').style.display = 'flex';
-    setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
+    setTimeout(function(){ var el=document.getElementById('gate-input'); if(el) el.focus(); }, 100);
     if(!bgmCtx){
       try { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
     }
@@ -2529,7 +2532,7 @@ setTimeout(function(){
     setBGMMode('default');
   });
   console.log('[init] introBtn event bound');
-}, 0);
+})();
 
 // ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
 var bgmCtx = null;
