@@ -3564,7 +3564,7 @@ function showPuzzle(puzzleData){
 
     if(matches){
       // 正确——关闭谜题，推进到结局
-      pv.style.display = 'none';
+      hideAllViews();
       state.puzzleSolved = true;
       showEnding();
       return;
@@ -3601,7 +3601,7 @@ function showPuzzle(puzzleData){
       inputEl.focus();
     } else {
       // 3次用完——自动推进，记录理解偏差
-      pv.style.display = 'none';
+      hideAllViews();
       state.puzzleSolved = true;
       state.puzzleFailed = true;
       showEnding();
@@ -3872,7 +3872,7 @@ function showReasoningQuiz(){
 
     if(correct){
       // 正确 → 进入 Clock 假真相步骤
-      pv.style.display = 'none';
+      hideAllViews();
       clearCountdown();
       // 找到 clock_fake_truth 的索引
       for(var si = 0; si < dialogueSteps.length; si++){
@@ -3969,7 +3969,7 @@ function showZeroUnlockQuiz(){
     });
 
     if(correct){
-      pv.style.display = 'none';
+      hideAllViews();
       clearCountdown();
       for(var si = 0; si < dialogueSteps.length; si++){
         if(dialogueSteps[si].id === 'zero_clue'){
@@ -3985,7 +3985,7 @@ function showZeroUnlockQuiz(){
         errEl.textContent = '看来你并不真正了解零号计划。';
         submitBtn.disabled = true;
         setTimeout(function(){
-          pv.style.display = 'none';
+          hideAllViews();
           clearCountdown();
           for(var si = 0; si < dialogueSteps.length; si++){
             if(dialogueSteps[si].id === 'quiz_fail'){
