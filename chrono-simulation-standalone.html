@@ -2581,23 +2581,40 @@ function startBGM_London(){
     bgmTimers.push(tid);
   })();
 
-  // 第三层：D多利亚泛音铃（上移一整个八度，每 7~10 秒）
-  var bellNotes = [587, 698, 784, 659, 587, 587, 698, 587];
-  var bellIndex = 0;
-  (function playBell(){
+  // 第三层：D多利亚动机 · 大提琴慢速连奏（每8秒演奏一遍）
+  // 动机音程：[0, 3, 7, 10, 7] = D, F, A, C, A
+  var motNotes = [293, 349, 440, 523, 440];
+  var motIndex = 0;
+  (function playMotif(){
     if(!bgmRunning || _currentMode !== 'london') return;
     var now = bgmCtx.currentTime;
-    var freq = bellNotes[bellIndex % bellNotes.length];
-    bellIndex++;
-    var o = bgmCtx.createOscillator();
-    o.type = 'sine'; o.frequency.value = freq;
-    var env = bgmCtx.createGain();
-    env.gain.setValueAtTime(0.05, now);
-    env.gain.exponentialRampToValueAtTime(0.001, now + 3.5);
-    o.connect(env); env.connect(masterBGM);
-    o.start(now); o.stop(now + 3.5);
-    bgmNodes.push(o, env);
-    var tid = setTimeout(playBell, 7000 + Math.random() * 3000);
+    // 逐个音连奏
+    for(var i = 0; i < motNotes.length; i++){
+      (function(ii){
+        var t = now + ii * 1.6;
+        var o = bgmCtx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = motNotes[ii];
+        // 大提琴质感：LPF + 颤音
+        var lpf = bgmCtx.createBiquadFilter();
+        lpf.type = 'lowpass'; lpf.frequency.value = 350; lpf.Q.value = 1.2;
+        var vib = bgmCtx.createOscillator();
+        vib.type = 'sine'; vib.frequency.value = 0.4;
+        var vg = bgmCtx.createGain(); vg.gain.value = 4;
+        vib.connect(vg); vg.connect(o.frequency);
+        vib.start(t);
+        var env = bgmCtx.createGain();
+        env.gain.setValueAtTime(0.0, t);
+        env.gain.linearRampToValueAtTime(0.045, t + 0.15);
+        env.gain.setValueAtTime(0.045, t + 1.2);
+        env.gain.exponentialRampToValueAtTime(0.001, t + 1.55);
+        o.connect(lpf); lpf.connect(env); env.connect(masterBGM);
+        o.start(t); o.stop(t + 1.6);
+        bgmNodes.push(o, lpf, vib, vg, env);
+      })(i);
+    }
+    motIndex++;
+    var tid = setTimeout(playMotif, 8000);
     bgmTimers.push(tid);
   })();
 }
@@ -2638,23 +2655,27 @@ function startBGM_Shanghai(){
     bgmTimers.push(tid);
   })();
 
-  // 第三层：C五声音阶泛音铃（上一整个八度，更紧凑，每 3~5 秒）
-  var bellNotes = [1047, 1175, 1319, 1568, 1760, 1319, 1568, 1047];
-  var bellIndex = 0;
-  (function playBell(){
+  // 第三层：C五声动机 · 明亮断奏琶音（每4秒快速琶一遍）
+  // 动机音程：[0, 2, 4, 7, 9] = C, D, E, G, A
+  var motNotes = [523, 587, 659, 784, 880];
+  (function playMotif(){
     if(!bgmRunning || _currentMode !== 'shanghai') return;
     var now = bgmCtx.currentTime;
-    var freq = bellNotes[bellIndex % bellNotes.length];
-    bellIndex++;
-    var o = bgmCtx.createOscillator();
-    o.type = 'sine'; o.frequency.value = freq;
-    var env = bgmCtx.createGain();
-    env.gain.setValueAtTime(0.06, now);
-    env.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
-    o.connect(env); env.connect(masterBGM);
-    o.start(now); o.stop(now + 1.8);
-    bgmNodes.push(o, env);
-    var tid = setTimeout(playBell, 3000 + Math.random() * 2000);
+    // 快速琶音：每音0.1秒，0.02秒间隔
+    for(var i = 0; i < motNotes.length; i++){
+      (function(ii){
+        var t = now + ii * 0.12;
+        var o = bgmCtx.createOscillator();
+        o.type = 'triangle'; o.frequency.value = motNotes[ii];
+        var env = bgmCtx.createGain();
+        env.gain.setValueAtTime(0.055, t);
+        env.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        o.connect(env); env.connect(masterBGM);
+        o.start(t); o.stop(t + 0.12);
+        bgmNodes.push(o, env);
+      })(i);
+    }
+    var tid = setTimeout(playMotif, 4000 + Math.random() * 1500);
     bgmTimers.push(tid);
   })();
 }
@@ -2699,23 +2720,34 @@ function startBGM_Tokyo(){
     bgmTimers.push(tid);
   })();
 
-  // 第三层：都节音阶三角波铃（上移一整个八度，每 6~9 秒）
-  var bellNotes = [1047, 1109, 1397, 1568, 1865, 1397, 1568, 1047];
-  var bellIndex = 0;
-  (function playBell(){
+  // 第三层：E都节动机 · detune滑音（每7秒演奏一遍）
+  // 动机音程：[0, 1, 5, 6, 5] = E, F, A, B, A
+  var motNotes = [330, 349, 523, 587, 523];
+  (function playMotif(){
     if(!bgmRunning || _currentMode !== 'tokyo') return;
     var now = bgmCtx.currentTime;
-    var freq = bellNotes[bellIndex % bellNotes.length];
-    bellIndex++;
-    var o = bgmCtx.createOscillator();
-    o.type = 'triangle'; o.frequency.value = freq;
-    var env = bgmCtx.createGain();
-    env.gain.setValueAtTime(0.05, now);
-    env.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
-    o.connect(env); env.connect(masterBGM);
-    o.start(now); o.stop(now + 2.5);
-    bgmNodes.push(o, env);
-    var tid = setTimeout(playBell, 6000 + Math.random() * 3000);
+    for(var i = 0; i < motNotes.length; i++){
+      (function(ii){
+        var t = now + ii * 1.2;
+        // detuned 双振荡器（0.2% 偏差 → 约1.5Hz拍频）
+        var o1 = bgmCtx.createOscillator();
+        o1.type = 'triangle'; o1.frequency.setValueAtTime(motNotes[ii] * 0.998, t);
+        o1.frequency.linearRampToValueAtTime(motNotes[ii], t + 0.2);
+        var o2 = bgmCtx.createOscillator();
+        o2.type = 'triangle'; o2.frequency.setValueAtTime(motNotes[ii] * 1.002, t);
+        o2.frequency.linearRampToValueAtTime(motNotes[ii], t + 0.2);
+        var g = bgmCtx.createGain();
+        g.gain.setValueAtTime(0.0, t);
+        g.gain.linearRampToValueAtTime(0.028, t + 0.2);
+        g.gain.setValueAtTime(0.028, t + 0.9);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+        o1.connect(g); o2.connect(g); g.connect(masterBGM);
+        o1.start(t); o1.stop(t + 1.2);
+        o2.start(t); o2.stop(t + 1.2);
+        bgmNodes.push(o1, o2, g);
+      })(i);
+    }
+    var tid = setTimeout(playMotif, 7000 + Math.random() * 1000);
     bgmTimers.push(tid);
   })();
 }
@@ -2756,36 +2788,47 @@ function startBGM_Rome(){
     bgmTimers.push(tid);
   })();
 
-  // 第三层：D多利亚高音泛音铃（上移约半个八度） + 水滴点缀
-  var bellNotes = [880, 988, 1047, 1175, 1319, 1480, 1568, 880];
-  var bellIndex = 0;
-  (function playBell(){
+  // 第三层：D多利亚动机 · 温暖回声（每9秒演奏一遍，带延迟）
+  var motNotes = [294, 349, 440, 523, 440];
+  (function playMotif(){
     if(!bgmRunning || _currentMode !== 'rome') return;
     var now = bgmCtx.currentTime;
-    var freq = bellNotes[bellIndex % bellNotes.length];
-    bellIndex++;
-    var o = bgmCtx.createOscillator();
-    o.type = 'sine'; o.frequency.value = freq;
-    var env = bgmCtx.createGain();
-    env.gain.setValueAtTime(0.06, now);
-    env.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
-    o.connect(env); env.connect(masterBGM);
-    o.start(now); o.stop(now + 3.0);
-    bgmNodes.push(o, env);
-
-    // 水滴点缀：随机高频短促音
-    if(Math.random() < 0.4){
-      var drop = bgmCtx.createOscillator();
-      drop.type = 'sine'; drop.frequency.value = 2600 + Math.random() * 400;
-      var dEnv = bgmCtx.createGain();
-      dEnv.gain.setValueAtTime(0.025, now);
-      dEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-      drop.connect(dEnv); dEnv.connect(masterBGM);
-      drop.start(now); drop.stop(now + 0.08);
-      bgmNodes.push(drop, dEnv);
+    for(var i = 0; i < motNotes.length; i++){
+      (function(ii){
+        var t = now + ii * 2.0;
+        // 直接音
+        var o = bgmCtx.createOscillator();
+        o.type = 'sine'; o.frequency.value = motNotes[ii];
+        var g = bgmCtx.createGain();
+        g.gain.setValueAtTime(0.04, t);
+        g.gain.setValueAtTime(0.04, t + 1.5);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 2.5);
+        o.connect(g); g.connect(masterBGM);
+        o.start(t); o.stop(t + 2.5);
+        bgmNodes.push(o, g);
+        // 延迟回声1（0.3秒后，音量减半）
+        var d1 = bgmCtx.createOscillator();
+        d1.type = 'sine'; d1.frequency.value = motNotes[ii];
+        var dg1 = bgmCtx.createGain();
+        dg1.gain.setValueAtTime(0.0, t + 0.3);
+        dg1.gain.linearRampToValueAtTime(0.02, t + 0.35);
+        dg1.gain.exponentialRampToValueAtTime(0.001, t + 2.8);
+        d1.connect(dg1); dg1.connect(masterBGM);
+        d1.start(t + 0.3); d1.stop(t + 2.8);
+        bgmNodes.push(d1, dg1);
+        // 延迟回声2（0.6秒后，音量再减半）
+        var d2 = bgmCtx.createOscillator();
+        d2.type = 'sine'; d2.frequency.value = motNotes[ii];
+        var dg2 = bgmCtx.createGain();
+        dg2.gain.setValueAtTime(0.0, t + 0.6);
+        dg2.gain.linearRampToValueAtTime(0.01, t + 0.65);
+        dg2.gain.exponentialRampToValueAtTime(0.001, t + 3.1);
+        d2.connect(dg2); dg2.connect(masterBGM);
+        d2.start(t + 0.6); d2.stop(t + 3.1);
+        bgmNodes.push(d2, dg2);
+      })(i);
     }
-
-    var tid = setTimeout(playBell, 5000 + Math.random() * 2000);
+    var tid = setTimeout(playMotif, 9000 + Math.random() * 1000);
     bgmTimers.push(tid);
   })();
 }
@@ -2839,6 +2882,26 @@ function startBGM_Clock(){
     o.start(now); o.stop(now + 4.5);
     bgmNodes.push(o, env);
     var tid = setTimeout(playBell, 12000 + Math.random() * 3000);
+    bgmTimers.push(tid);
+  })();
+
+  // 钟表滴答声：tick-tock 交替，每秒一次（square 短脉冲）
+  var _tickCount = 0;
+  (function tickTock(){
+    if(!bgmRunning || _currentMode !== 'clock') return;
+    var now = bgmCtx.currentTime;
+    var isTick = (_tickCount % 2 === 0);
+    var freq = isTick ? 880 : 660;
+    var o = bgmCtx.createOscillator();
+    o.type = 'square'; o.frequency.value = freq;
+    var g = bgmCtx.createGain();
+    g.gain.setValueAtTime(0.035, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    o.connect(g); g.connect(masterBGM);
+    o.start(now); o.stop(now + 0.05);
+    bgmNodes.push(o, g);
+    _tickCount++;
+    var tid = setTimeout(tickTock, 1000);
     bgmTimers.push(tid);
   })();
 }
