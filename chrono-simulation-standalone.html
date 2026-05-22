@@ -1510,6 +1510,7 @@ STORIES.winslow = [
   // 第2章：进入（选择：敲门后的态度）
   {
     title: '十一年',
+    letterClue: 'w1_E',
     narrative: '你敲了三下。木料梆梆响，声音在雾里很快就消失了。\n\n' +
                '脚步声。门开了一条缝。一只灰蓝色的眼睛从缝隙里端详了你很久。\n\n' +
                '"你来了。"他说。不是疑问句。\n\n' +
@@ -1682,6 +1683,7 @@ STORIES.shanghai = [
   // 第3章a：直接上三楼
   {
     title: '星盘',
+    letterClue: 's2_R',
     narrative_before_direct: '你走到三楼包厢门口的时候，里面的人正好站起来。\n\n' +
                              '他看起来三十多岁，穿着笔挺的白色西装。他看到你，没有惊讶——只是朝走廊尽头的洗手间偏了偏头。\n\n' +
                              '你跟上了他。\n\n' +
@@ -1830,6 +1832,7 @@ STORIES.underground = [
   // 第2章：进入房间（选择：直接拿 / 先了解）
   {
     title: 'B-12',
+    letterClue: 'u3_O',
     narrative: 'B-12的门半掩着。你推开的时候，门轴发出一声干涩的吱响。\n\n' +
                '房间里只有一张金属桌子。一把椅子。桌上放着一个圆形的金属装置——手掌大小，中心有一个凹陷，刚好容纳一根手指。它的外壳上有一圈细密的刻度，像是某种更精密的东西的缩小版。\n\n' +
                '你把装置拿起来。侧面有一行极小的蚀刻，不是刻度——是字母。\n\n' +
@@ -1958,7 +1961,7 @@ STORIES.rome_bath = [
                '你愣了一下。\n\n' +
                '你犹豫了一下，然后……',
     hotspots: [
-      {id: 'r4_pillar', keyword: '大理石柱子', content: '你走近其中一根柱子。表面刻着漩涡状的纹路，从底部盘旋而上。你用手掌贴上去——大理石是温的，蒸汽浸润的触感微微发涩。\n\n你的手指顺着纹路滑了一下，在一个凹痕处停住了。\n\n深度不均匀。不是同一批雕出来的。有些地方浅，有些地方深——像是在同一个图案上反复加深了很多年。\n\n在柱子底部，接近地面的阴影里，有一个非常浅的刻痕。你蹲下来看。\n\n是一个字母。Z。\n\n你盯着它看了很久。然后站起来，假装什么都没有发现。'},
+      {id: 'r4_pillar', keyword: '大理石柱子', letterKey: 'r4_Z', content: '你走近其中一根柱子。表面刻着漩涡状的纹路，从底部盘旋而上。你用手掌贴上去——大理石是温的，蒸汽浸润的触感微微发涩。\n\n你的手指顺着纹路滑了一下，在一个凹痕处停住了。\n\n深度不均匀。不是同一批雕出来的。有些地方浅，有些地方深——像是在同一个图案上反复加深了很多年。\n\n在柱子底部，接近地面的阴影里，有一个非常浅的刻痕。你蹲下来看。\n\n是一个字母。Z。\n\n你盯着它看了很久。然后站起来，假装什么都没有发现。'},
       {id: 'r4_veteran', keyword: '角落里', content: '那个老人没有在看你。他一直在看更衣区的方向——但不时地，他会在扫视整个大厅的时候把目光在入口方向停一停。\n\n他的背挺得很直。他的右手一直放在膝盖上——掌心朝下，指节朝外。如果那里有武器，他拔出来不需要一秒钟。\n\n但你在意的不是这个。你在意的是——他的坐姿看起来很自然，但他的目光路线形成了一个固定的扫描模式。入口。更衣区。出口。蒸汽口。然后再来一轮。\n\n这是训练出来的。不是天生的。'}
     ],
     choices: [
@@ -3157,6 +3160,12 @@ function renderChapter(chapter){
   }
   textDiv.innerHTML = processText(narrative);
 
+  // 记录字母线索（如果本章包含）
+  if(chapter.letterClue){
+    if(!state.exploredHotspots) state.exploredHotspots = {};
+    state.exploredHotspots[chapter.letterClue] = true;
+  }
+
   body.appendChild(textDiv);
 
   // 绑定热点点击事件
@@ -3294,8 +3303,8 @@ function processText(text){
 var reviewSave = null; // {quizType: 'puzzle'|'escape', quizEl, narrativeEl}
 
 function enterReviewMode(quizType){
-  // 记录是哪个答题界面
-  var quizEl = quizType === 'puzzle'
+  // 记录是哪个答题界面（puzzle / escape / reasoning 共用 puzzle-view）
+  var quizEl = (quizType === 'puzzle' || quizType === 'reasoning')
     ? document.getElementById('puzzle-view')
     : document.getElementById('escape-quiz-view');
   reviewSave = {quizType: quizType, quizEl: quizEl};
@@ -3519,6 +3528,12 @@ function showHotspotContent(id){
   if(!state.exploredHotspots) state.exploredHotspots = {};
   state.exploredHotspots[id] = true;
 
+  // 记录关联的字母线索（如热点有关联字母）
+  if(data.letterKey){
+    if(!state.exploredHotspots) state.exploredHotspots = {};
+    state.exploredHotspots[data.letterKey] = true;
+  }
+
   // 绑定关闭
   var closeBtn = document.getElementById('hotspot-close-btn');
   var newBtn = closeBtn.cloneNode(true);
@@ -3685,6 +3700,92 @@ function handleQuizAnswer(correct, btn){
     }
   }
   content.appendChild(nextBtn);
+}
+
+// ===== 推理验证关卡（真结局路径）=====
+function showReasoningQuiz(){
+  // 隐藏当前视图
+  document.getElementById('narrative-view').style.display = 'none';
+  document.getElementById('ending-view').style.display = 'none';
+
+  var pv = document.getElementById('puzzle-view');
+  pv.style.display = 'flex';
+
+  var questionEl = pv.querySelector('.puzzle-question');
+  var inputEl = document.getElementById('puzzle-input');
+  var errEl = document.getElementById('puzzle-err');
+  var submitBtn = document.getElementById('puzzle-submit-btn');
+  var dots = document.querySelectorAll('#puzzle-attempts .dot');
+
+  // 设置问题（硬核：不直接说答案，让玩家推理）
+  questionEl.innerHTML =
+    '时钟把四张卡片翻过来，放在桌上。<br><br>' +
+    '<span style="font-size:1.8em;letter-spacing:0.6em;color:var(--gold);">Z &nbsp; E &nbsp; R &nbsp; O</span><br><br>' +
+    '"你在四个任务里见过它们——<br>' +
+    '伦敦地球仪的底座。上海星盘的背面。<br>' +
+    '新宿锚定器的侧面。罗马铜盘的柱子上。<br><br>' +
+    '它们不是装饰。是有人在等你把它们拼起来。<br><br>' +
+    '现在——告诉我它们拼在一起是什么？"';
+
+  inputEl.value = '';
+  errEl.textContent = '';
+
+  var attempts = 0;
+  var maxAttempts = 3;
+
+  // 重置尝试次数指示器
+  dots.forEach(function(d, i){
+    d.className = i < maxAttempts ? 'dot active' : 'dot';
+  });
+
+  // 回顾故事按钮（允许玩家回看线索）
+  var reviewBtn = document.getElementById('puzzle-review-btn');
+  reviewBtn.onclick = function(){ enterReviewMode('reasoning'); };
+  reviewSave = {quizType: 'reasoning', quizEl: pv};
+
+  inputEl.focus();
+
+  function checkAnswer(){
+    var val = inputEl.value.trim().toLowerCase();
+    if(!val){
+      errEl.textContent = '输入你的答案。';
+      return;
+    }
+
+    var correct = false;
+    var accept = ['zero','0','零','归零','时间归零','零号计划','z','zelo'];
+    accept.forEach(function(a){
+      if(val === a) correct = true;
+    });
+
+    if(correct){
+      // 正确 → 进入泽罗真结局路线
+      pv.style.display = 'none';
+      clearCountdown();
+      endClockPathZelo();
+    } else {
+      // 错误
+      if(dots[attempts]) dots[attempts].className = 'dot wrong';
+      attempts++;
+      if(attempts >= maxAttempts){
+        errEl.textContent = '测试失败。时钟收起了卡片。「你还没准备好。」';
+        submitBtn.disabled = true;
+        setTimeout(function(){
+          pv.style.display = 'none';
+          renderClockDialogue(); // 回到Clock对话（第3选项消失）
+        }, 3000);
+      } else if(attempts === 2){
+        errEl.textContent = '还不对。—— 提示：你朋友消失的编号，和这四个字母有关。';
+      } else {
+        errEl.textContent = '不对。再想想。';
+      }
+    }
+  }
+
+  submitBtn.onclick = checkAnswer;
+  inputEl.onkeydown = function(e){
+    if(e.key === 'Enter') checkAnswer();
+  };
 }
 
 // ===== 获取任务副标题 =====
