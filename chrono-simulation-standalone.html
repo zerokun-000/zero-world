@@ -4308,8 +4308,8 @@ function renderClockDialogue(){
             '"{{red|你觉得自己在找朋友。但你有没有想过——他留下那台头显，就是为了让你来？}}"\n\n' +
             '{{po|你想反驳他。但你的嘴巴张不开。因为你知道他说的是真的。}}',
       choices: [
-        {text: '"他想让我替他完成什么？"', tag: 'ask_purpose', nextStepId: 'zero_plan_truth'},
-        {text: '"管理局到底在做什么？"', tag: 'ask_bureau', nextStepId: 'zero_plan_truth'}
+        {text: '"他想让我替他完成什么？"', tag: 'ask_purpose', nextStepId: 'after_brief'},
+        {text: '"管理局到底在做什么？"', tag: 'ask_bureau', nextStepId: 'after_brief'}
       ]
     },
     // 分支B：先问朋友（原逻辑）
@@ -4348,6 +4348,21 @@ function renderClockDialogue(){
             '"{{red|四次模拟完成的不仅是回收任务。伦敦——你走得很稳。上海——你没有慌乱。新宿地下——你甚至没有为那个父亲感到难受太久。罗马——你已经不需要犹豫。}}"\n\n' +
             '{{po|他在说你。全都是你做过的事。一字不差。}}\n\n' +
             '"{{red|现在——告诉我。你觉得你是来救他的——还是来代替他的？}}"\n',
+      choices: [
+        {text: '"我是来救他的。"', tag: 'insist_save', nextStepId: 'three_choices'},
+        {text: '你不说话了。你在消化他说的一切', tag: 'silence', nextStepId: 'three_choices'}
+      ]
+    },
+    // 第3.5步：zero_plan_brief 后续（不重复零号计划解释）
+    {
+      id: 'after_brief',
+      text: '"{{red|你的朋友——夜行者——是第五批。他通过了前三次测试。然后在第四次测试中叛逃了。}}"\n\n' +
+        '{{po|第四次。罗马。浴场。铜盘。你突然意识到——你走的路线，和他走的路线，可能是完全一样的。}}\n\n' +
+        '"{{red|而你——在他叛逃之后，自己找上了门。你拿起他留下的头显。你走进了他走过的四个场景。你在每一个场景里做了和他一样的选择——甚至更快。}}"\n\n' +
+        '他靠回椅背。\n\n' +
+        '"{{red|四次模拟完成的不仅是回收任务。伦敦——你走得很稳。上海——你没有慌乱。新宿地下——你甚至没有为那个父亲感到难受太久。罗马——你已经不需要犹豫。}}"\n\n' +
+        '{{po|他在说你。全都是你做过的事。一字不差。}}\n\n' +
+        '"{{red|现在——告诉我。你觉得你是来救他的——还是来代替他的？}}"',
       choices: [
         {text: '"我是来救他的。"', tag: 'insist_save'},
         {text: '你不说话了。你在消化他说的一切', tag: 'silence'}
