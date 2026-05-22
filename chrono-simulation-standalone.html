@@ -2360,6 +2360,7 @@ var state = {
 function saveState(){
   try {
     var data = {
+      week: state.week || 1,
       exploredHotspots: state.exploredHotspots || {},
       endings: state.endings || [],
       missionResults: state.missionResults || {},
@@ -2372,13 +2373,16 @@ function saveState(){
 function loadState(){
   try {
     var raw = localStorage.getItem('chrono_state');
-    if(!raw) return;
+    if(!raw) return null;
     var data = JSON.parse(raw);
+    if(data.week) state.week = data.week;
     if(data.exploredHotspots) state.exploredHotspots = data.exploredHotspots;
     if(data.endings) state.endings = data.endings;
     if(data.missionResults) state.missionResults = data.missionResults;
     if(data.cluesAvailable) state.cluesAvailable = data.cluesAvailable;
-  } catch(e) {}
+    console.log('[loadState] restored week=' + state.week);
+    return data;
+  } catch(e) { return null; }
 }
 
 function clearState(){
@@ -2446,6 +2450,7 @@ function tryUnlock(){
   } else if(val === PASSWORDS.week2){
     // 二周目：直接触发Clock对话
     state.week = 2;
+    saveState();   // ← 必须存！否则刷新后 week 变回 1
     console.log('[tryUnlock] -> state.week = 2');
     hideAllViews();
     document.body.setAttribute('data-week', '2');
@@ -2487,24 +2492,44 @@ function tryUnlock(){
 // ===== 引导页逻辑 =====
 var introPage = document.getElementById('intro-page');
 var introBtn = document.getElementById('intro-btn');
-// 初始状态：显示引导页，隐藏登录和主界面
-introPage.style.display = 'flex';
-document.getElementById('gate').style.display = 'none';
-document.getElementById('main').style.display = 'none';
+var gate = document.getElementById('gate');
+var main = document.getElementById('main');
 
-introBtn.addEventListener('click', function(){
-  introPage.style.display = 'none';
-  document.getElementById('gate').style.display = 'flex';
-  setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
-  // 在用户手势内创建 AudioContext 并立即启动 BGM（移动端必须在手势内）
-  if(!bgmCtx){
-    try {
-      bgmCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e){}
+// 根据 state.week 判断初始显示
+(function initView(){
+  if(state.week === 2){
+    // 二周目：直接显示 week2-view，跳过 intro 和 gate
+    console.log('[init] week=2, skip to week2');
+    introPage.style.display = 'none';
+    gate.style.display = 'none';
+    main.style.display = 'flex';
+    showWeek2Transition();
+  } else {
+    // 一周目：显示 intro-page
+    console.log('[init] week=1, show intro');
+    introPage.style.display = 'flex';
+    gate.style.display = 'none';
+    main.style.display = 'none';
   }
-  try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
-  setBGMMode('default');
-});
+})();
+
+// 延迟绑定 introBtn，确保 DOM 完全就绪
+setTimeout(function(){
+  var btn = document.getElementById('intro-btn');
+  if(!btn) { console.log('[init] intro-btn not found'); return; }
+  btn.addEventListener('click', function(){
+    console.log('[introBtn] clicked');
+    document.getElementById('intro-page').style.display = 'none';
+    document.getElementById('gate').style.display = 'flex';
+    setTimeout(function(){ document.getElementById('gate-input').focus(); }, 100);
+    if(!bgmCtx){
+      try { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
+    setBGMMode('default');
+  });
+  console.log('[init] introBtn event bound');
+}, 0);
 
 // ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
 var bgmCtx = null;
