@@ -2417,9 +2417,7 @@ var PASSWORDS = {
 };
 
 // ===== 登录逻辑 =====
-var gate = document.getElementById('gate');
 var gateInput = document.getElementById('gate-input');
-var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
 // gate-btn 使用 HTML 内联 onclick（最可靠），不再用 bindBtn
@@ -3754,11 +3752,9 @@ function showHotspotContent(id){
 
   // 绑定关闭
   var closeBtn = document.getElementById('hotspot-close-btn');
-  var newBtn = closeBtn.cloneNode(true);
-  closeBtn.parentNode.replaceChild(newBtn, closeBtn);
-  newBtn.addEventListener('click', function(){
+  closeBtn.onclick = function(){
     overlay.style.display = 'none';
-  });
+  };
 }
 
 // ===== 逃离关卡 · 身份验证 =====
@@ -4372,12 +4368,9 @@ function showClueReview(){
   // 确保关闭按钮已绑定（每次打开时绑定，解决DOM解析顺序问题）
   var closeBtn = document.getElementById('clue-close-btn');
   if(closeBtn){
-    // 移除旧监听器避免重复
-    var newBtn = closeBtn.cloneNode(true);
-    closeBtn.parentNode.replaceChild(newBtn, closeBtn);
-    newBtn.addEventListener('click', function(){
+    closeBtn.onclick = function(){
       document.getElementById('clue-view').style.display = 'none';
-    });
+    };
   }
 }
 
