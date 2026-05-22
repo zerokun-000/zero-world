@@ -3890,7 +3890,8 @@ function showReasoningQuiz(){
         errEl.textContent = '测试失败。';
         submitBtn.disabled = true;
         setTimeout(function(){
-          pv.style.display = 'none';
+          // 正确初始化：hideAllViews 会清 main 内联样式 + 隐藏所有视图
+          hideAllViews();
           clearCountdown();
           // 跳转到 quiz_fail 步骤（时钟失望 → 接回 three_choices）
           for(var si = 0; si < dialogueSteps.length; si++){
