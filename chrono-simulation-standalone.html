@@ -2224,15 +2224,8 @@ var gateInput = document.getElementById('gate-input');
 var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
-// 桌面端：click 事件
+// 桌面端 + 移动端：只用 click 事件
 gateBtn.addEventListener('click', tryUnlock);
-// 手机端：touchstart 事件（避免 300ms 延迟）
-gateBtn.addEventListener('touchstart', function(e){
-  e.preventDefault();
-  e.stopPropagation();
-  tryUnlock();
-}, {passive: false});
-
 gateInput.addEventListener('keydown', function(e){
   if(e.key === 'Enter') tryUnlock();
 });
@@ -2300,12 +2293,6 @@ introBtn.addEventListener('click', function(){
   try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
   setBGMMode('default');
 });
-// 手机端：touchstart 事件（避免 300ms 延迟）
-introBtn.addEventListener('touchstart', function(e){
-  e.preventDefault();
-  e.stopPropagation();
-  introBtn.click();
-}, {passive: false});
 
 // ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
 var bgmCtx = null;
