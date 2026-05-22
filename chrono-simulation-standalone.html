@@ -2405,21 +2405,19 @@ var gateInput = document.getElementById('gate-input');
 var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
-bindBtn('gate-btn', tryUnlock);
-gateInput.addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });  // 保留原逻辑
+// gate-btn 使用 HTML 内联 onclick（最可靠），不再用 bindBtn
+gateInput.addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });  // 键盘回车保留 addEventListener
 
 // ===== 工具函数 =====
 // 通用按钮绑定（移动端友好）：cloneNode 去旧事件 + onclick 备用 + addEventListener
 function bindBtn(id, handler){
   var btn = document.getElementById(id);
   if(!btn){ console.log('[bindBtn] ' + id + ' not found'); return; }
-  // cloneNode 去掉所有旧事件（包括之前绑定的 addEventListener）
+  // cloneNode 去掉所有旧事件监听器（某些浏览器 addEventListener 会累积）
   var clone = btn.cloneNode(true);
   btn.parentNode.replaceChild(clone, btn);
-  // 内联 onclick 备用（即使 addEventListener 失败也能用）
+  // 只用 onclick —— 在移动端比 addEventListener 更可靠
   clone.onclick = handler;
-  // addEventListener 正常路径
-  clone.addEventListener('click', handler);
   console.log('[bindBtn] ' + id + ' bound');
 }
 
@@ -2525,26 +2523,17 @@ var main = document.getElementById('main');
   }
 })();
 
-// 绑定 introBtn（兼容移动端）
-(function bindIntroBtn(){
-  var btn = document.getElementById('intro-btn');
-  if(!btn) { console.log('[init] intro-btn not found'); return; }
-  // 先去掉旧事件，防止重复绑定
-  var newBtn = btn.cloneNode(true);
-  btn.parentNode.replaceChild(newBtn, btn);
-  newBtn.addEventListener('click', function(){
-    console.log('[introBtn] clicked');
-    document.getElementById('intro-page').style.display = 'none';
-    document.getElementById('gate').style.display = 'flex';
-    setTimeout(function(){ var el=document.getElementById('gate-input'); if(el) el.focus(); }, 100);
+// intro-btn 使用 HTML 内联 onclick（最可靠）
+// BGM 初始化用事件委托，不碰 DOM 元素
+document.addEventListener('click', function(e){
+  if(e.target.id === 'intro-btn' || (e.target.closest && e.target.closest('#intro-btn'))){
     if(!bgmCtx){
       try { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
     }
     try { if(bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); } catch(e){}
     setBGMMode('default');
-  });
-  console.log('[init] introBtn event bound');
-})();
+  }
+});
 
 // ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
 var bgmCtx = null;
