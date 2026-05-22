@@ -2405,12 +2405,24 @@ var gateInput = document.getElementById('gate-input');
 var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
-gateBtn.addEventListener('click', tryUnlock);
-gateInput.addEventListener('keydown', function(e){
-  if(e.key === 'Enter') tryUnlock();
-});
+bindBtn('gate-btn', tryUnlock);
+gateInput.addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });  // 保留原逻辑
 
 // ===== 工具函数 =====
+// 通用按钮绑定（移动端友好）：cloneNode 去旧事件 + onclick 备用 + addEventListener
+function bindBtn(id, handler){
+  var btn = document.getElementById(id);
+  if(!btn){ console.log('[bindBtn] ' + id + ' not found'); return; }
+  // cloneNode 去掉所有旧事件（包括之前绑定的 addEventListener）
+  var clone = btn.cloneNode(true);
+  btn.parentNode.replaceChild(clone, btn);
+  // 内联 onclick 备用（即使 addEventListener 失败也能用）
+  clone.onclick = handler;
+  // addEventListener 正常路径
+  clone.addEventListener('click', handler);
+  console.log('[bindBtn] ' + id + ' bound');
+}
+
 // 清除 main 的内联样式，让 CSS 重新接管布局（防止移动端高度计算异常）
 function resetMain(){
   var main = document.getElementById('main');
@@ -4168,9 +4180,7 @@ function showEnding(){
     '<div class="text">' + ending.text.replace(/\n/g, '<br>') + '</div>' +
     '<button class="next-btn" id="end-next-btn">' + nextLabel + '</button>';
 
-  document.getElementById('end-next-btn').addEventListener('click', function(){
-    startNextMission();
-  });
+  bindBtn('end-next-btn', startNextMission);
 }
 
 // ===== 汇聚结局：催眠螺旋 + 最终臣服 =====
@@ -4298,13 +4308,12 @@ function showConvergenceEnding(){
         'transition:all .3s;">重 新 开 始</button>' +
       '</div>';
 
-    document.getElementById('conv-clue-btn').addEventListener('click', showClueReview);
-    document.getElementById('conv-escape-btn').addEventListener('click', showEscapeQuiz);
-    document.getElementById('conv-restart-btn').addEventListener('click', function(){
-      // 强制从服务器重新加载，绕过浏览器缓存
-      var base = location.href.split('?')[0];
-      location.href = base + '?v=' + Date.now();
-    });
+    bindBtn('conv-clue-btn', showClueReview);
+    bindBtn('conv-escape-btn', showEscapeQuiz);
+    bindBtn('conv-restart-btn', function(){
+    var base = location.href.split('?')[0];
+    location.href = base + '?v=' + Date.now();
+  });
   }
 
   // 启动催眠序列
