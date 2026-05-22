@@ -2391,10 +2391,12 @@ function hideAllViews(){
 function tryUnlock(){
   var val = gateInput.value.trim();
   gateErr.textContent = '';
+  console.log('[tryUnlock] val=' + val + ' week1?' + (val === PASSWORDS.week1) + ' week2?' + (val === PASSWORDS.week2));
 
   if(val === PASSWORDS.week1){
     // 一周目：线性任务链，自动开始
     state.week = 1;
+    console.log('[tryUnlock] -> state.week = 1');
     state.missionIndex = 0;
     hideAllViews();
     document.body.removeAttribute('data-week');
@@ -2407,6 +2409,7 @@ function tryUnlock(){
   } else if(val === PASSWORDS.week2){
     // 二周目：直接触发Clock对话
     state.week = 2;
+    console.log('[tryUnlock] -> state.week = 2');
     hideAllViews();
     document.body.setAttribute('data-week', '2');
     document.getElementById('spiral-bg').classList.add('week2');
@@ -4210,7 +4213,9 @@ function showConvergenceEnding(){
     document.getElementById('conv-clue-btn').addEventListener('click', showClueReview);
     document.getElementById('conv-escape-btn').addEventListener('click', showEscapeQuiz);
     document.getElementById('conv-restart-btn').addEventListener('click', function(){
-      location.reload();
+      // 强制从服务器重新加载，绕过浏览器缓存
+      var base = location.href.split('?')[0];
+      location.href = base + '?v=' + Date.now();
     });
   }
 
@@ -4332,6 +4337,7 @@ function startClockDialogue(){
 
 function renderClockDialogue(){
   try{
+    console.log('[renderClockDialogue] clockStep=' + clockStep + ' week=' + state.week + ' exploredHotspots=' + JSON.stringify(state.exploredHotspots));
   var nv = document.getElementById('narrative-view');
   nv.innerHTML = '';
 
@@ -4372,7 +4378,9 @@ function renderClockDialogue(){
           var hs = state.exploredHotspots || {};
           // 二周目自动解锁第3选项；一周目需收集4字母
           var zeroUnlocked = ((hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']) || state.week === 2);
+          console.log('[renderClockDialogue] zeroUnlocked=' + zeroUnlocked + ' hs=' + JSON.stringify(hs));
           if(zeroUnlocked){
+            console.log('[renderClockDialogue] >>> zero option WILL be shown');
             c.push({text: '"我知道零号计划。"', tag: 'ask_zero', nextStepId: 'zero_clue'});
           }
           return c;
@@ -4903,7 +4911,7 @@ function showZeloFinale(){
     '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:10px;">' + endingTitle + '</div>' +
     '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">真结局 · 泽罗路线</div>' +
     '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;" id="zelo-finale-text"></div>' +
-    '<button onclick="location.reload()" style="' +
+    '<button onclick="location.href=location.href.split('?')[0]+'?v='+Date.now()" style="' +
     '  margin-top:36px;' +
     '  background:rgba(139,105,20,0.3);' +
     '  border:1px solid var(--gold-dim);' +
@@ -5026,7 +5034,7 @@ function showZeloTimeoutEnding(){
     'font-size:13px;' +
     'font-family:inherit;' +
     'letter-spacing:2px;';
-  btn.addEventListener('click', function(){ location.reload(); });
+  btn.addEventListener('click', function(){ var b=location.href.split('?')[0]; location.href=b+'?v='+Date.now(); });
   nv.appendChild(btn);
 }
 
@@ -5178,7 +5186,7 @@ function showClockEnding(){
     '你不记得自己是怎么穿上的。\n\n' +
     '但你不再问问题了。' +
     '</div>' +
-    '<button onclick="location.reload()" style="' +
+    '<button onclick="location.href=location.href.split('?')[0]+'?v='+Date.now()" style="' +
     '  margin-top:36px;' +
     '  background:rgba(139,20,20,0.25);' +
     '  border:1px solid var(--red-dim);' +
@@ -5246,7 +5254,7 @@ function showClockTimeoutEnding(){
     'font-size:13px;' +
     'font-family:inherit;' +
     'letter-spacing:2px;';
-  btn.addEventListener('click', function(){ location.reload(); });
+  btn.addEventListener('click', function(){ var b=location.href.split('?')[0]; location.href=b+'?v='+Date.now(); });
   nv.appendChild(btn);
 }
 
@@ -5292,7 +5300,7 @@ function showClockSpareEnding(){
     '但你有时候会想到那个网址。\n\n' +
     '……要不要再打开一次？' +
     '</div>' +
-    '<button onclick="location.reload()" style="' +
+    '<button onclick="location.href=location.href.split('?')[0]+'?v='+Date.now()" style="' +
     '  margin-top:36px;' +
     '  background:rgba(100,100,100,0.2);' +
     '  border:1px solid #555;' +
@@ -5337,7 +5345,7 @@ function showFinalEnding(choice){
       '「{{gold|去生活吧。不要回头。}}」\n\n' +
       '发件人：未知。' +
       '</div>' +
-      '<button onclick="location.reload()" style="' +
+      '<button onclick="location.href=location.href.split('?')[0]+'?v='+Date.now()" style="' +
       '  margin-top:36px;' +
       '  background:rgba(139,105,20,0.3);' +
       '  border:1px solid var(--gold-dim);' +
@@ -5366,7 +5374,7 @@ function showFinalEnding(choice){
       '（你偶尔会想起，曾经有个朋友跟你说过一个叫"zerotime"的密码。\n' +
       '但你想不起来那个朋友的名字。）' +
       '</div>' +
-      '<button onclick="location.reload()" style="' +
+      '<button onclick="location.href=location.href.split('?')[0]+'?v='+Date.now()" style="' +
       '  margin-top:36px;' +
       '  background:rgba(90,60,60,0.3);' +
       '  border:1px solid var(--red-dim);' +
@@ -5397,7 +5405,7 @@ function showFinalEnding(choice){
       '至于其他的事情——\n' +
       '明天再说。' +
       '</div>' +
-      '<button onclick="location.reload()" style="' +
+      '<button onclick="location.href=location.href.split('?')[0]+'?v='+Date.now()" style="' +
       '  margin-top:36px;' +
       '  background:rgba(100,100,100,0.2);' +
       '  border:1px solid #555;' +
