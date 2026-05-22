@@ -2224,7 +2224,6 @@ var gateInput = document.getElementById('gate-input');
 var gateBtn = document.getElementById('gate-btn');
 var gateErr = document.getElementById('gate-err');
 
-// 桌面端 + 移动端：只用 click 事件
 gateBtn.addEventListener('click', tryUnlock);
 gateInput.addEventListener('keydown', function(e){
   if(e.key === 'Enter') tryUnlock();
@@ -2233,12 +2232,6 @@ gateInput.addEventListener('keydown', function(e){
 function tryUnlock(){
   var val = gateInput.value.trim();
   gateErr.textContent = '';
-
-  // 调试密码 zero000：最高权限激活
-  if(val === 'zero000'){
-    if(typeof window.activateDebug === 'function') window.activateDebug();
-    return;
-  }
 
   if(val === PASSWORDS.week1){
     // 一周目：线性任务链，自动开始
@@ -3557,11 +3550,6 @@ function showReasoningQuiz(){
 
   function checkAnswer(){
     var val = inputEl.value.trim().toLowerCase();
-    // 调试密码 zero000：最高权限激活
-    if(val === 'zero000'){
-      if(typeof window.activateDebug === 'function') window.activateDebug();
-      return;
-    }
     if(!val){
       errEl.textContent = '输入你的答案。';
       return;
@@ -3675,9 +3663,13 @@ function showZeroUnlockQuiz(){
     if(correct){
       pv.style.display = 'none';
       clearCountdown();
-      // 设置跳转目标，由 renderClockDialogue 消费
-      window.gTargetStepId = 'zero_clue';
-      startClockDialogue();
+      for(var si = 0; si < dialogueSteps.length; si++){
+        if(dialogueSteps[si].id === 'zero_clue'){
+          clockStep = si;
+          break;
+        }
+      }
+      renderClockDialogue();
     } else {
       if(dots[attempts]) dots[attempts].className = 'dot wrong';
       attempts++;
@@ -4024,12 +4016,6 @@ function startClockDialogue(){
   renderClockDialogue();
 }
 
-// 全局对话步骤（供外部访问）
-var gDialogueSteps = null;
-
-// 外部跳转目标（showZeroUnlockQuiz 设置，renderClockDialogue 消费）
-var gTargetStepId = null;
-
 function renderClockDialogue(){
   var nv = document.getElementById('narrative-view');
   nv.innerHTML = '';
@@ -4151,7 +4137,7 @@ function renderClockDialogue(){
             '"{{gold|所以他说的每一个字——都是在**诱导你**。不是在告诉你真相。是在**塑造**你想要听到的真相。}}"\n\n' +
             '沉默。三秒。\n\n' +
             '然后破球转向你。光带的颜色从红色变成了**金黄色**——这是第一次。\n\n' +
-            '"{{gold|你。他们说你是"找朋友的人"。}}"\n\n' +
+            '"{{gold|宿主。他们说你是"找朋友的人"。}}"\n\n' +
             '"{{gold|但其实——**你是被从你朋友的身体里，抽出来的一个碎片**。}}"\n\n' +
             '{{po|你说不出话。不是因为恐惧。是因为——你的身体**在确认这句话**。}}\n\n' +
             '"{{gold|夜行者。你的朋友。他的意识太强了——强到零号计划的系统没法直接覆盖他。}}"\n\n' +
@@ -4171,7 +4157,7 @@ function renderClockDialogue(){
             '{{po|你想动。但你的四肢——不，你的**每一个细胞**——都在拒绝这个真相。}}\n\n' +
             '{{po|不是纳米颗粒。是**你自己的身体在害怕**。怕自己不是"自己"。}}',
       choices: [],
-      autoNext: 'three_choices_truth'
+      autoNext: 'three_choices'
     },
     // 密码失败 → 时钟失望 → 接回 three_choices
     {
@@ -4271,24 +4257,6 @@ function renderClockDialogue(){
         {text: '你不说话了。你在消化他说的一切', tag: 'silence'}
       ]
     },
-    // 第3.5步：破球揭示真相后的选择（真结局路线）
-    {
-      id: 'three_choices_truth',
-      text: '灯没有再亮。\n\n' +
-            '怀表的秒针声停在黑暗里，像一根**没有拨完的弦**。\n\n' +
-            '"{{red|……你听到了。}}"\n\n' +
-            '时钟的声音第一次**没有节奏**。像是一个排练了无数遍的剧本，'
-            '被人在最后一刻撕掉了一页。\n\n' +
-            '"{{red|破球告诉你的——是真相。但真相不等于全貌。}}"\n\n' +
-            '他从黑暗里拿出时间倒流器。三个格子，两个还亮着。\n\n' +
-            '"{{red|拿着。不管你怎么选——它能让你多一条退路。}}"\n\n' +
-            '{{po|他在帮你。还是在给你一个"看起来像选择"的错觉？}}',
-      choices: [
-        {text: '"……我加入。" — 跟着时钟走', tag: 'join'},
-        {text: '"我拒绝。" — 信破球，走暗门', tag: 'resist'},
-        {text: '"……我需要想想。" — 沉默', tag: 'spare'}
-      ]
-    },
     {
       id: 'three_choices',
       text: '时钟看了你一眼。不是审视——是确认。像是在确认一件他早就猜到的事。\n\n' +
@@ -4311,12 +4279,11 @@ function renderClockDialogue(){
       ]
     },
     // 第4步：破球介入（切断系统 → 甩数据 → 指示暗门位置）
-    // 注意：如果玩家已经通过 zelo_true_truth，灯已经灭了，这里不再重复"灯灭了"
     {
       id: 'zelo_intervention',
-      text: '灯没有再亮起来。\n\n' +
-            '房间里的黑暗没有散去。天花板、面板、时钟身后那面半透明的屏幕——还是黑的。\n\n' +
-            '你肩膀旁边的黑色金属球还在。红色光带在它外壳上缓缓旋转。\n\n' +
+      text: '灯灭了。\n\n' +
+            '不是一盏——是所有的。天花板、面板、时钟身后那面半透明的屏幕——全黑了。\n\n' +
+            '房间里只剩一个光源：一颗悬浮在你肩膀旁边的黑色金属球。红色光带在它外壳上缓缓旋转。\n\n' +
             '时钟摘下单片眼镜，折好，放进口袋。\n\n' +
             '"{{red|……泽罗。}}"\n\n' +
             '不是招呼。是在念一份旧报告上的名字。\n\n' +
@@ -4328,7 +4295,7 @@ function renderClockDialogue(){
             '沉默持续了三秒。不是争辩的那种沉默——是等对面说完的那种。\n\n' +
             '"{{gold|我还有更多。但我不想浪费数据了。}}"\n\n' +
             '破球退到你肩膀上方。光带闪了一次——不是威胁。是通知。\n\n' +
-            '{{po|"我在走廊尽头的暗门。"}}——这句话只进了你的脑子，没进房间。\n\n' +
+            '{{po|"宿主在走廊尽头的暗门。"}}——这句话只进了你的脑子，没进房间。\n\n' +
             '时钟靠回椅背。他伸手——把怀表翻过来，表盘朝下，轻轻放在桌上。\n\n' +
             '"{{red|……走吧。}}"\n\n' +
             '秒针压在桌面和表盖之间。还在走，但你看不到了。\n',
@@ -4344,17 +4311,6 @@ function renderClockDialogue(){
     // 所有对话结束，直接触发结尾
     endClockPath();
     return;
-  }
-
-  // 消费 gTargetStepId
-  if(window.gTargetStepId){
-    for(var si = 0; si < dialogueSteps.length; si++){
-      if(dialogueSteps[si].id === window.gTargetStepId){
-        clockStep = si;
-        break;
-      }
-    }
-    window.gTargetStepId = null;
   }
 
   var step = dialogueSteps[clockStep];
@@ -4529,7 +4485,7 @@ function renderZeloScene(){
             '"跟上来。\n\n' +
             '只说了这两个字。然后转身走在前面。\n\n' +
             '破球飘到他肩膀上方。\n\n' +
-            '"{{gold|你，他的神经匹配度比上一轮高了三个点。}}"\n\n' +
+            '"{{gold|宿主，他的神经匹配度比上一轮高了三个点。}}"\n\n' +
             '"我没有问。"\n\n' +
             '"{{gold|我只是在陈述事实。}}"\n\n' +
             '"我没记错的话——上次让你闭嘴的时候你还没学会\'事实\'这个词。"\n\n' +
@@ -4770,7 +4726,7 @@ function showClockForcedModification(){
   textDiv.className = 'text';
   textDiv.innerHTML = processText(
     '破球的光带在你身后闪了一下——然后退回了暗处。\n\n' +
-    '{{po|"我。"}}——那句话没说出来。\n\n' +
+    '{{po|"宿主。"}}——那句话没说出来。\n\n' +
     '时钟把怀表翻回来。表盘朝上。秒针还在走。\n\n' +
     '"{{red|你回来了。}}"\n\n' +
     '他没有问为什么。只是看着你。\n\n' +
@@ -4820,7 +4776,7 @@ function showRefuseBothPath(){
   textDiv.innerHTML = processText(
     '暗门那边——泽罗的卡其色斗篷转了一下。然后消失了。\n\n' +
     '破球的光带最后闪了一次。\n\n' +
-    '{{po|"我。他不来。"}}——那句话没进你的脑子。你已经转身了。\n\n' +
+    '{{po|"宿主。他不来。"}}——那句话没进你的脑子。你已经转身了。\n\n' +
     '你跑。\n\n' +
     '走廊是一条又一条。日光灯嗡嗡响。门牌号在余光里闪过——B-12、B-17、B-21。你不知道哪条路通向出口。你只是不想停下来。\n\n' +
     '你拐了三个弯。或者四个。你不确定。\n\n' +
@@ -5163,6 +5119,18 @@ if(typeof MISSIONS === 'undefined'){
   var PW = 'zero000';
   var active = false;
 
+  // 键盘监听：输入 zero000 激活
+  document.addEventListener('keydown', function(e){
+    if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+      seq += e.key.toLowerCase();
+      if(seq.length > PW.length) seq = seq.slice(-PW.length);
+      if(seq === PW){
+        seq = '';
+        if(!active) activateDebug();
+      }
+    }
+  });
+
   // 也支持 URL 参数 ?debug=zero000
   try {
     var params = new URLSearchParams(location.search);
@@ -5211,9 +5179,6 @@ if(typeof MISSIONS === 'undefined'){
 
     showDebugPanel();
   }
-
-  // 暴露给全局，供密码框调用
-  window.activateDebug = activateDebug;
 
   function showDebugPanel(){
     if(document.getElementById('debug-panel')) return;
@@ -5273,7 +5238,10 @@ if(typeof MISSIONS === 'undefined'){
     if(s.missionOrder) s.missionOrder.forEach(function(k){ s.completedMissions[k] = true; });
     var hypno = document.getElementById('hypno-layer');
     if(hypno) hypno.style.display = 'none';
-    alert('✓ 已解锁全部内容 · Z/E/R/O 收集完成 · 二周目模式已激活 · 催眠序列已跳过');
+    alert('✓ 已解锁全部内容
+· Z/E/R/O 收集完成
+· 二周目模式已激活
+· 催眠序列已跳过');
   }
 
   function viewEndings(){
