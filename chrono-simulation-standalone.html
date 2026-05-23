@@ -429,19 +429,50 @@ body {
 #narrative-body .text {
   white-space: pre-wrap;
 }
-/* 段落渐进提示 */
-.paragraph-hint {
-  text-align: center;
-  color: var(--gold-dim);
-  font-size: 11px;
-  letter-spacing: 1px;
-  margin-top: 10px;
-  opacity: 0.6;
-  animation: hintPulse 2s infinite;
+/* 翻页导航区 */
+.page-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0 8px;
+  min-height: 64px;
 }
-@keyframes hintPulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+.page-info {
+  color: var(--gold-dim);
+  font-size: 12px;
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+.page-next-btn {
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.page-next-btn:hover,
+.page-next-btn:active {
+  background: rgba(212,168,67,.08);
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+.page-next-btn::after {
+  content: '▸';
+  font-size: 12px;
+}
+.page-text {
+  transition: opacity .1s;
 }
 /* 泽罗的金色文字 */
 .gold-text {
@@ -3396,9 +3427,6 @@ function renderChapter(chapter){
   var body = document.createElement('div');
   body.id = 'narrative-body';
 
-  var textDiv = document.createElement('div');
-  textDiv.className = 'text';
-
   var narrative = getNarrative(chapter);
 
   // 处理热点关键词
@@ -3413,69 +3441,47 @@ function renderChapter(chapter){
   // 记录全文到回顾日志
   window._narrativeLog.push({title: chapter.title, text: narrative, mission: state.currentMission});
 
-  // 分段：先按 \n\n 拆细段，再合并为合理大小的块（每块3-5句，避免太碎）
+  // 分段：先按 \n\n 拆细段，再合并为合理大小的块（每块4句）
   var rawSegments = narrative.split('\n\n').filter(function(p){ return p.trim(); });
-  var paragraphs = [];
+  var pages = [];
   var buf = '';
   for(var i = 0; i < rawSegments.length; i++){
     buf += (buf ? '\n\n' : '') + rawSegments[i];
-    // 凑够4段或最后一段时输出
     if((i + 1) % 4 === 0 || i === rawSegments.length - 1){
-      paragraphs.push(buf);
+      pages.push(buf);
       buf = '';
     }
   }
-  window._paragraphQueue = paragraphs;
-  window._paragraphIndex = 0;
 
-  // 只显示第一段
-  textDiv.innerHTML = processText(paragraphs[0]);
+  // ===== 翻页模式：每页独立显示 =====
+  var curPage = 0;
+  var totalPages = pages.length;
 
-  // 段落进度提示
-  var progressHint = document.createElement('div');
-  progressHint.className = 'paragraph-hint';
-  progressHint.textContent = paragraphs.length > 1 ? '点击继续 ▾' : '';
-  body.appendChild(textDiv);
-  body.appendChild(progressHint);
+  // 页面容器
+  var pageWrapper = document.createElement('div');
+  pageWrapper.className = 'page-wrapper';
 
-  // 点击翻页
-  function advanceParagraph(e){
-    // 不拦截热点点击
-    if(e && e.target && e.target.classList.contains('hotspot-marker')) return;
-    window._paragraphIndex++;
-    if(window._paragraphIndex < paragraphs.length){
-      // 淡入下一段
-      textDiv.style.opacity = '0';
-      setTimeout(function(){
-        textDiv.innerHTML += processText('\n\n' + paragraphs[window._paragraphIndex]);
-        textDiv.style.opacity = '1';
-        // 重绑热点
-        bindChapterHotspots(textDiv, chapter);
-        // 更新提示
-        var remain = paragraphs.length - window._paragraphIndex - 1;
-        progressHint.textContent = remain > 0 ? '点击继续 ▾' : '';
-        // 滚动到底部
-        textDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
-      }, 120);
-    } else {
-      // 全部显示完毕
-      textDiv.removeEventListener('click', advanceParagraph);
-      progressHint.style.display = 'none';
-      textDiv.style.cursor = 'default';
-      choicesDiv.style.display = 'flex';
-    }
-  }
+  var textDiv = document.createElement('div');
+  textDiv.className = 'text page-text';
+  textDiv.innerHTML = processText(pages[0]);
+  pageWrapper.appendChild(textDiv);
 
-  if(paragraphs.length > 1){
-    textDiv.addEventListener('click', advanceParagraph);
-    textDiv.style.cursor = 'pointer';
-    textDiv.style.transition = 'opacity 0.1s';
-  }
+  // 翻页导航区（固定底部）
+  var navArea = document.createElement('div');
+  navArea.className = 'page-nav';
 
-  // 绑热点（首段）
-  bindChapterHotspots(textDiv, chapter);
+  var pageInfo = document.createElement('span');
+  pageInfo.className = 'page-info';
+  pageInfo.textContent = totalPages > 1 ? (curPage + 1) + ' / ' + totalPages : '';
 
-  // 构建选择按钮（先隐藏，等全部段落显示完再展示）
+  var nextBtn = document.createElement('button');
+  nextBtn.className = 'page-next-btn';
+  nextBtn.style.display = totalPages > 1 ? 'flex' : 'none';
+
+  navArea.appendChild(nextBtn);
+  navArea.appendChild(pageInfo);
+
+  // 选择按钮（先隐藏）
   var choicesDiv = document.createElement('div');
   choicesDiv.id = 'choices';
   choicesDiv.style.display = 'none';
@@ -3497,6 +3503,38 @@ function renderChapter(chapter){
     choicesDiv.appendChild(contBtn);
   }
 
+  // 翻到指定页
+  function showPage(idx){
+    curPage = idx;
+    textDiv.style.opacity = '0';
+    setTimeout(function(){
+      textDiv.innerHTML = processText(pages[curPage]);
+      bindPageHotspots(textDiv, chapter.hotspots);
+      textDiv.style.opacity = '1';
+      pageInfo.textContent = totalPages > 1 ? (curPage + 1) + ' / ' + totalPages : '';
+      // 末页：显示选项，隐藏导航
+      if(curPage === totalPages - 1){
+        navArea.style.display = 'none';
+        choicesDiv.style.display = 'flex';
+      } else {
+        navArea.style.display = 'flex';
+        choicesDiv.style.display = 'none';
+      }
+      textDiv.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }, 100);
+  }
+
+  nextBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(curPage < totalPages - 1) showPage(curPage + 1);
+  });
+
+  // 初始绑定热点
+  bindPageHotspots(textDiv, chapter.hotspots);
+
+  body.appendChild(pageWrapper);
+  body.appendChild(navArea);
+
   // 组装
   nv.innerHTML = '';
   nv.appendChild(header);
@@ -3504,15 +3542,15 @@ function renderChapter(chapter){
   nv.appendChild(choicesDiv);
 }
 
-// 绑定热点点击（抽取为独立函数供分段复用）
-function bindChapterHotspots(textDiv, chapter){
-  if(!chapter.hotspots || chapter.hotspots.length === 0) return;
-  chapter.hotspots.forEach(function(h){
+// 绑定页面内热点（每页独立绑定）
+function bindPageHotspots(textDiv, hotspots){
+  if(!hotspots || hotspots.length === 0) return;
+  hotspots.forEach(function(h){
     var el = textDiv.querySelector('[data-hs="' + h.id + '"]');
     if(el && !el._bound){
       el._bound = true;
       el.addEventListener('click', function(e){
-        e.stopPropagation(); // 不触发翻页
+        e.stopPropagation();
         showHotspotContent(h.id);
       });
     }
