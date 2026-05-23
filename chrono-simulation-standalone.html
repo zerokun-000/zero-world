@@ -3943,18 +3943,18 @@ function showReasoningQuiz(){
   var submitBtn = document.getElementById('puzzle-submit-btn');
   var dots = document.querySelectorAll('#puzzle-attempts .dot');
 
-  // 设置问题（硬核：不直接说答案，让玩家推理）
-  questionEl.innerHTML =
-    '时钟把四张卡片翻过来，放在桌上。<br><br>' +
-    '<span style="font-size:1.8em;letter-spacing:0.6em;color:var(--gold);">Z &nbsp; E &nbsp; R &nbsp; O</span><br><br>' +
-    '"你在四个任务里见过它们——<br>' +
-    '伦敦地球仪的底座。上海星盘的背面。<br>' +
-    '新宿锚定器的侧面。罗马铜盘的柱子上。<br><br>' +
-    '它们不是装饰。是有人在等你把它们拼起来。<br><br>' +
-    '现在——告诉我它们拼在一起是什么？"';
+  // 设置问题：验证玩家是否真正理解收集到的线索的含义
+  questionEl.innerHTML = processText(
+    '时钟把四张卡片翻过来，放在桌上。\n\n' +
+    '卡片上各有一个字母——但你认得它们。\n\n' +
+    '"{{red|伦敦的地球仪。上海的星盘。新宿的锚定器。罗马的铜盘。}}"\n\n' +
+    '"{{red|每一个场景都在等你收集同一样东西。}}"\n\n' +
+    '"{{red|如果你真的看懂了——告诉我，这个计划叫什么名字。}}"'
+  );
 
   inputEl.value = '';
   errEl.textContent = '';
+  inputEl.placeholder = '输入你推理出的答案';
 
   var attempts = 0;
   var maxAttempts = 3;
@@ -4018,7 +4018,7 @@ function showReasoningQuiz(){
           renderClockDialogue();
         }, 2000);
       } else if(attempts === 2){
-        errEl.textContent = '还不对。—— Clock 说了四个字母。你一路上有没有注意到什么？';
+        errEl.textContent = '还不对。——你一路上有没有注意到什么被刻在角落里的东西？';
       } else {
         errEl.textContent = '不对。再想想。';
       }
@@ -4050,11 +4050,9 @@ function showZeroUnlockQuiz(){
     '"{{red|哦？}}"\n\n' +
     '他笑了。\n\n' +
     '不是冷笑。是**那种笑**——你知道答案就在嘴边，但他不会直接告诉你。\n\n' +
-    '他拿出四张卡片，在桌上排开——'
-  ) + '<br><br>' +
-    '<span style="font-size:1.8em;letter-spacing:0.6em;color:var(--gold);font-weight:bold;">Z &nbsp; E &nbsp; R &nbsp; O</span>' +
-    '<br><br>' + processText(
-    '"{{red|证明给我看——你知道这四个字母拼起来是什么。}}"'
+    '他从抽屉里取出一张卡片，扣在桌上。\n\n' +
+    '"{{red|你一路走过四个场景。每个场景都给你留了东西。}}"\n\n' +
+    '"{{red|如果你真的知道——告诉我那个计划叫什么。}}"'
   );
 
   inputEl.value = '';
@@ -4115,7 +4113,7 @@ function showZeroUnlockQuiz(){
           renderClockDialogue();
         }, 2000);
       } else if(attempts === 2){
-        errEl.textContent = '还不对。—— Clock 说了四个字母。你一路上有没有注意到什么？';
+        errEl.textContent = '还不对。——想想你走过的那些场景，角落里藏着什么？';
       } else {
         errEl.textContent = '不对。再想想。';
       }
