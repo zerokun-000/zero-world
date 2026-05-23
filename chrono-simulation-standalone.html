@@ -429,6 +429,20 @@ body {
 #narrative-body .text {
   white-space: pre-wrap;
 }
+/* 段落渐进提示 */
+.paragraph-hint {
+  text-align: center;
+  color: var(--gold-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-top: 10px;
+  opacity: 0.6;
+  animation: hintPulse 2s infinite;
+}
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
 /* 泽罗的金色文字 */
 .gold-text {
   color: var(--gold);
@@ -3348,14 +3362,13 @@ function loadChapter(){
   renderChapter(chapter);
 }
 
-// ===== 渲染章节 =====
+// ===== 渲染章节（分段渐进显示）=====
 function renderChapter(chapter){
   var nv = document.getElementById('narrative-view');
 
   // 构建头部
   var header = document.createElement('div');
   header.id = 'narrative-header';
-  // 一周目线性模式不显示返回按钮（没有任务选择页可回）
   if(state.week !== 1 || state.missionOrder.length === 0){
     var backBtn = document.createElement('button');
     backBtn.className = 'back-btn';
@@ -3364,7 +3377,6 @@ function renderChapter(chapter){
     if(state.week === 2){
       backFn = function(){
         document.getElementById('narrative-view').style.display = 'none';
-        // 二周目无任务选择界面，直接回到Clock对话
         startClockDialogue();
       };
     }
@@ -3389,7 +3401,7 @@ function renderChapter(chapter){
 
   var narrative = getNarrative(chapter);
 
-  // 处理热点关键词（只高亮第一次出现，避免同词条多次出现全挂链接）
+  // 处理热点关键词
   if(chapter.hotspots && chapter.hotspots.length > 0){
     chapter.hotspots.forEach(function(h){
       var esc = h.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -3397,28 +3409,66 @@ function renderChapter(chapter){
       narrative = narrative.replace(re, '<span class="hotspot-marker" data-hs="' + h.id + '">' + h.keyword + '</span>');
     });
   }
-  textDiv.innerHTML = processText(narrative);
+
+  // 记录全文到回顾日志
   window._narrativeLog.push({title: chapter.title, text: narrative, mission: state.currentMission});
 
-  body.appendChild(textDiv);
+  // 分段：按 \n\n 拆分段落
+  var paragraphs = narrative.split('\n\n').filter(function(p){ return p.trim(); });
+  window._paragraphQueue = paragraphs;
+  window._paragraphIndex = 0;
 
-  // 绑定热点点击事件
-  if(chapter.hotspots && chapter.hotspots.length > 0){
-    var hotspots = chapter.hotspots;
-    setTimeout(function(){
-      var markers = textDiv.querySelectorAll('.hotspot-marker');
-      markers.forEach(function(m){
-        m.addEventListener('click', function(){
-          var id = this.getAttribute('data-hs');
-          showHotspotContent(id);
-        });
-      });
-    }, 50);
+  // 只显示第一段
+  textDiv.innerHTML = processText(paragraphs[0]);
+
+  // 段落进度提示
+  var progressHint = document.createElement('div');
+  progressHint.className = 'paragraph-hint';
+  progressHint.textContent = paragraphs.length > 1 ? '点击继续 ▾' : '';
+  body.appendChild(textDiv);
+  body.appendChild(progressHint);
+
+  // 点击翻页
+  function advanceParagraph(e){
+    // 不拦截热点点击
+    if(e && e.target && e.target.classList.contains('hotspot-marker')) return;
+    window._paragraphIndex++;
+    if(window._paragraphIndex < paragraphs.length){
+      // 淡入下一段
+      textDiv.style.opacity = '0';
+      setTimeout(function(){
+        textDiv.innerHTML += processText('\n\n' + paragraphs[window._paragraphIndex]);
+        textDiv.style.opacity = '1';
+        // 重绑热点
+        bindChapterHotspots(textDiv, chapter);
+        // 更新提示
+        var remain = paragraphs.length - window._paragraphIndex - 1;
+        progressHint.textContent = remain > 0 ? '点击继续 ▾' : '';
+        // 滚动到底部
+        textDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
+      }, 120);
+    } else {
+      // 全部显示完毕
+      textDiv.removeEventListener('click', advanceParagraph);
+      progressHint.style.display = 'none';
+      textDiv.style.cursor = 'default';
+      choicesDiv.style.display = 'flex';
+    }
   }
 
-  // 构建选择按钮
+  if(paragraphs.length > 1){
+    textDiv.addEventListener('click', advanceParagraph);
+    textDiv.style.cursor = 'pointer';
+    textDiv.style.transition = 'opacity 0.1s';
+  }
+
+  // 绑热点（首段）
+  bindChapterHotspots(textDiv, chapter);
+
+  // 构建选择按钮（先隐藏，等全部段落显示完再展示）
   var choicesDiv = document.createElement('div');
   choicesDiv.id = 'choices';
+  choicesDiv.style.display = 'none';
 
   var choices = getChoices(chapter);
   if(choices && choices.length > 0){
@@ -3430,7 +3480,6 @@ function renderChapter(chapter){
       choicesDiv.appendChild(btn);
     });
   } else {
-    // 没有选择，显示"继续"按钮
     var contBtn = document.createElement('button');
     contBtn.className = 'choice-btn';
     contBtn.textContent = '继续 →';
@@ -3443,6 +3492,21 @@ function renderChapter(chapter){
   nv.appendChild(header);
   nv.appendChild(body);
   nv.appendChild(choicesDiv);
+}
+
+// 绑定热点点击（抽取为独立函数供分段复用）
+function bindChapterHotspots(textDiv, chapter){
+  if(!chapter.hotspots || chapter.hotspots.length === 0) return;
+  chapter.hotspots.forEach(function(h){
+    var el = textDiv.querySelector('[data-hs="' + h.id + '"]');
+    if(el && !el._bound){
+      el._bound = true;
+      el.addEventListener('click', function(e){
+        e.stopPropagation(); // 不触发翻页
+        showHotspotContent(h.id);
+      });
+    }
+  });
 }
 
 // ===== 获取叙事文本 =====
