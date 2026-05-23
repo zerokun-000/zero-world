@@ -3413,8 +3413,18 @@ function renderChapter(chapter){
   // 记录全文到回顾日志
   window._narrativeLog.push({title: chapter.title, text: narrative, mission: state.currentMission});
 
-  // 分段：按 \n\n 拆分段落
-  var paragraphs = narrative.split('\n\n').filter(function(p){ return p.trim(); });
+  // 分段：先按 \n\n 拆细段，再合并为合理大小的块（每块3-5句，避免太碎）
+  var rawSegments = narrative.split('\n\n').filter(function(p){ return p.trim(); });
+  var paragraphs = [];
+  var buf = '';
+  for(var i = 0; i < rawSegments.length; i++){
+    buf += (buf ? '\n\n' : '') + rawSegments[i];
+    // 凑够4段或最后一段时输出
+    if((i + 1) % 4 === 0 || i === rawSegments.length - 1){
+      paragraphs.push(buf);
+      buf = '';
+    }
+  }
   window._paragraphQueue = paragraphs;
   window._paragraphIndex = 0;
 
