@@ -473,6 +473,18 @@ body {
 }
 .page-text {
   transition: opacity .1s;
+  font-size: 15px;
+  line-height: 2.2;
+  padding: 8px 0;
+  min-height: 120px;
+}
+/* 翻页容器：让文本居中聚焦 */
+#narrative-body .page-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 8px;
 }
 /* 泽罗的金色文字 */
 .gold-text {
@@ -788,6 +800,15 @@ body[data-week="2"] #gate::before {
     line-height: 2;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+  .page-text {
+    font-size: 14px;
+    line-height: 2.1;
+    padding: 4px 0;
+    min-height: 80px;
+  }
+  #narrative-body .page-wrapper {
+    padding: 0 2px;
   }
   #choices {
     padding: 12px 16px 20px;
