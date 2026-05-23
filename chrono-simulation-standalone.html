@@ -2175,6 +2175,14 @@ var MISSION_PUZZLES = {
 //  每个结局展示玩家从任务中带走的情感变化
 // ===========================================================
 
+// ===== 热点统计（用于探索完成度计算）=====
+var MISSION_HOTSPOT_IDS = {
+  winslow:     ['w1_lamp', 'w1_curtain', 'w1_globe'],
+  shanghai:    ['s2_balcony', 's2_ashtray', 's2_starplate'],
+  underground: ['u3_reddot', 'u3_corridor', 'u3_device'],
+  rome_bath:   ['r4_pillar', 'r4_veteran']
+};
+
 // ===== 线索档案数据 =====
 // 一周目完成后解锁，展示玩家在4个任务中经历的关键观察
 var CLUES = {
@@ -4183,6 +4191,23 @@ function showEnding(){
     '<div class="text">' + ending.text.replace(/\n/g, '<br>') + '</div>' +
     '<button class="next-btn" id="end-next-btn">' + nextLabel + '</button>';
 
+  // 检查当前任务是否有未探索的热点
+  if(state.currentMission && MISSION_HOTSPOT_IDS[state.currentMission]){
+    var hsIds = MISSION_HOTSPOT_IDS[state.currentMission];
+    var explored = state.exploredHotspots || {};
+    var missed = [];
+    hsIds.forEach(function(id){
+      if(!explored[id]) missed.push(id);
+    });
+    if(missed.length > 0){
+      var hintDiv = document.createElement('div');
+      hintDiv.style.cssText = 'text-align:center;color:var(--gold-dim);font-size:11px;margin-top:14px;letter-spacing:1px;opacity:0.7;';
+      hintDiv.textContent = '你感觉还有什么东西没有看仔细……（已探索 ' + (hsIds.length - missed.length) + '/' + hsIds.length + '）';
+      var nextBtn = document.getElementById('end-next-btn');
+      if(nextBtn) nextBtn.parentNode.insertBefore(hintDiv, nextBtn);
+    }
+  }
+
   bindBtn('end-next-btn', startNextMission);
 }
 
@@ -4339,8 +4364,11 @@ function showClueReview(){
 
     // 根据谜题完成情况决定显示状态
     var result = state.missionResults[mk] || '';
-    saveState();
-    var statusText = '状态：任务已完成';
+    var explored = state.exploredHotspots || {};
+    var hsIds = MISSION_HOTSPOT_IDS[mk] || [];
+    var exploredCount = 0;
+    hsIds.forEach(function(id){ if(explored[id]) exploredCount++; });
+    var statusText = '探索 ' + exploredCount + '/' + hsIds.length + ' · 任务已完成';
     if(result.indexOf('failed') >= 0){
       statusText = '状态：理解偏差 · 部分关键信息未识别';
     }
