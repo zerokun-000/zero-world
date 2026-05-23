@@ -2248,6 +2248,16 @@ var MISSION_HOTSPOT_IDS = {
   rome_bath:   ['r4_pillar', 'r4_veteran']
 };
 
+// ===== 谜题触发条件（叙事分支标签门控）=====
+// 只有玩家走了包含答案的分支线，才弹出谜题
+// 如果玩家没走答案线 → 跳过答题，直接显示理解偏差结局
+var PUZZLE_REQUIRED_TAGS = {
+  winslow: ['talk'],   // 选"和老人聊聊" → 看到"亲爱的艾德蒙"；选 approach 看不到
+  shanghai: ['open']   // 选"打开星盘" → 听到"又来了"；选 close 听不到
+  // underground: 所有分支都包含答案（父亲在第2章共用叙事中解释装置），无需限制
+  // rome_bath: 所有分支都包含答案（打开壁柜必定读到"时间归零"），无需限制
+};
+
 // ===== 线索档案数据 =====
 // 一周目完成后解锁，展示玩家在4个任务中经历的关键观察
 var CLUES = {
@@ -3368,17 +3378,19 @@ function loadChapter(){
   var mission = STORIES[state.currentMission];
   if(!mission || state.currentChapter >= mission.length){
     // 一周目：任务结束前检查是否有谜题需要解
-    // 如果玩家在当前任务里一个热点都没探索，说明走错了线——跳过答题
+    // 根据玩家走的叙事分支判断是否包含答案 → 没走答案线则跳过答题
     if(state.week === 1 && state.currentMission && !state.puzzleSolved){
-      var hsIds = MISSION_HOTSPOT_IDS[state.currentMission] || [];
-      var explored = state.exploredHotspots || {};
-      var exploredCount = 0;
-      hsIds.forEach(function(id){ if(explored[id]) exploredCount++; });
-      if(exploredCount === 0){
-        // 一个热点都没探索 → 走错了线 → 跳过答题，直接显示理解偏差结局
-        state.puzzleFailed = true;
-        showEnding();
-        return;
+      var requiredTags = PUZZLE_REQUIRED_TAGS[state.currentMission];
+      if(requiredTags){
+        var hasAnswer = requiredTags.some(function(tag){
+          return state.history.some(function(h){ return h.tag === tag; });
+        });
+        if(!hasAnswer){
+          // 玩家走的分支线不包含谜题答案 → 跳过答题，直接显示理解偏差结局
+          state.puzzleFailed = true;
+          showEnding();
+          return;
+        }
       }
       var puzzleData = window.MISSION_PUZZLES && MISSION_PUZZLES[state.currentMission];
       if(puzzleData){
