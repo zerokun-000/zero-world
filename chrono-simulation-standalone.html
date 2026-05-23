@@ -3368,7 +3368,18 @@ function loadChapter(){
   var mission = STORIES[state.currentMission];
   if(!mission || state.currentChapter >= mission.length){
     // 一周目：任务结束前检查是否有谜题需要解
+    // 如果玩家在当前任务里一个热点都没探索，说明走错了线——跳过答题
     if(state.week === 1 && state.currentMission && !state.puzzleSolved){
+      var hsIds = MISSION_HOTSPOT_IDS[state.currentMission] || [];
+      var explored = state.exploredHotspots || {};
+      var exploredCount = 0;
+      hsIds.forEach(function(id){ if(explored[id]) exploredCount++; });
+      if(exploredCount === 0){
+        // 一个热点都没探索 → 走错了线 → 跳过答题，直接显示理解偏差结局
+        state.puzzleFailed = true;
+        showEnding();
+        return;
+      }
       var puzzleData = window.MISSION_PUZZLES && MISSION_PUZZLES[state.currentMission];
       if(puzzleData){
         showPuzzle(puzzleData);
