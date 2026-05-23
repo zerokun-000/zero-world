@@ -4043,16 +4043,19 @@ function showZeroUnlockQuiz(){
   var submitBtn = document.getElementById('puzzle-submit-btn');
   var dots = document.querySelectorAll('#puzzle-attempts .dot');
 
-  questionEl.innerHTML =
-    '你选择了：「{{red|我知道零号计划。}}」<br><br>' +
-    '时钟停下动作。<br>' +
-    '他看着你，像在重新评估一件他以为已经评估过的东西。<br><br>' +
-    '"{{red|哦？}}"<br><br>' +
-    '他笑了。<br>' +
-    '不是冷笑。是**那种笑**——你知道答案就在嘴边，但他不会直接告诉你。<br><br>' +
-    '他拿出四张卡片，在桌上排开——<br><br>' +
-    '<span style="font-size:1.8em;letter-spacing:0.6em;color:var(--gold);">Z &nbsp; E &nbsp; R &nbsp; O</span><br><br>' +
-    '"{{red|证明给我看——你知道这四个字母拼起来是什么。}}"';
+  questionEl.innerHTML = processText(
+    '你选择了：「{{red|我知道零号计划。}}」\n\n' +
+    '时钟停下动作。\n\n' +
+    '他看着你，像在重新评估一件他以为已经评估过的东西。\n\n' +
+    '"{{red|哦？}}"\n\n' +
+    '他笑了。\n\n' +
+    '不是冷笑。是**那种笑**——你知道答案就在嘴边，但他不会直接告诉你。\n\n' +
+    '他拿出四张卡片，在桌上排开——'
+  ) + '<br><br>' +
+    '<span style="font-size:1.8em;letter-spacing:0.6em;color:var(--gold);font-weight:bold;">Z &nbsp; E &nbsp; R &nbsp; O</span>' +
+    '<br><br>' + processText(
+    '"{{red|证明给我看——你知道这四个字母拼起来是什么。}}"'
+  );
 
   inputEl.value = '';
   errEl.textContent = '';
@@ -4472,6 +4475,7 @@ function renderClockDialogue(){
     console.log('[renderClockDialogue] clockStep=' + clockStep + ' week=' + state.week + ' exploredHotspots=' + JSON.stringify(state.exploredHotspots));
   var nv = document.getElementById('narrative-view');
   nv.innerHTML = '';
+  nv.style.display = 'flex';
 
   var header = document.createElement('div');
   header.id = 'narrative-header';
