@@ -4680,8 +4680,8 @@ function renderClockDialogue(){
             '"{{red|你觉得自己在找朋友。但你有没有想过——他留下那台头显，就是为了让你来？}}"\n\n' +
             '{{po|你想反驳他。但你的嘴巴张不开。因为你知道他说的是真的。}}',
       choices: [
-        {text: '"他想让我替他完成什么？"', tag: 'ask_purpose'},
-        {text: '"管理局到底在做什么？"', tag: 'ask_bureau'}
+        {text: '"他想让我替他完成什么？"', tag: 'ask_purpose', nextStepId: 'after_brief'},
+        {text: '"管理局到底在做什么？"', tag: 'ask_bureau', nextStepId: 'after_brief'}
       ]
     },
     // 第3步：零号计划的真相（为什么是你）
