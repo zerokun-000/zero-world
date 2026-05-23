@@ -2537,12 +2537,16 @@ var main = document.getElementById('main');
 // 根据 state.week 判断初始显示
 (function initView(){
   if(state.week === 2){
-    // 二周目：直接显示 week2-view，跳过 intro 和 gate
-    console.log('[init] week=2, skip to week2');
+    // 二周目：显示 gate，带深层权限提示，允许重新输入密钥切换周目
+    console.log('[init] week=2, show gate with week2 hint');
     introPage.style.display = 'none';
-    gate.style.display = 'none';
-    main.style.display = 'flex';
-    showWeek2Transition();
+    gate.style.display = 'flex';
+    main.style.display = 'none';
+    var hint = document.getElementById('gate-hint');
+    if(hint) hint.innerHTML = '深层权限已激活。输入密钥继续，或输入其他密钥切换模式。';
+    var err = document.getElementById('gate-err');
+    if(err) err.style.color = 'var(--gold-dim)';
+    if(err) err.textContent = '欢迎回来，019号。';
   } else {
     // 一周目：显示 intro-page
     console.log('[init] week=1, show intro');
