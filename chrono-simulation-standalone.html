@@ -2387,6 +2387,9 @@ var state = {
   exploredHotspots: {}     // 探索的热点（持久化到 localStorage）
 };
 
+// 回顾模式日志：记录所有渲染过的叙事文本
+window._narrativeLog = [];
+
 // ===== 状态持久化（localStorage）=====
 function saveState(){
   try {
@@ -2514,6 +2517,7 @@ function tryUnlock(){
     state.history = [];
     state.puzzleSolved = false;
     state.puzzleFailed = false;
+    window._narrativeLog = [];
     gateErr.style.color = '#4a4';
     gateErr.textContent = '所有数据已清零，正在刷新…';
     setTimeout(function(){ location.href = location.href.split('?')[0] + '?v=' + Date.now(); }, 800);
@@ -3394,6 +3398,7 @@ function renderChapter(chapter){
     });
   }
   textDiv.innerHTML = processText(narrative);
+  window._narrativeLog.push({title: chapter.title, text: narrative, mission: state.currentMission});
 
   body.appendChild(textDiv);
 
@@ -3526,20 +3531,44 @@ function processText(text){
 
 // ===== 推理谜题（3次机会 + 渐进提示 + 理解偏差后果）=====
 // ===== 回顾故事（答题时切回叙事翻阅线索）=====
-var reviewSave = null; // {quizType: 'puzzle'|'escape', quizEl, narrativeEl}
+var reviewSave = null; // {quizType: 'puzzle'|'escape', quizEl}
 
 function enterReviewMode(quizType){
-  // 记录是哪个答题界面（puzzle / escape / reasoning 共用 puzzle-view）
   var quizEl = (quizType === 'puzzle' || quizType === 'reasoning')
     ? document.getElementById('puzzle-view')
     : document.getElementById('escape-quiz-view');
   reviewSave = {quizType: quizType, quizEl: quizEl};
-
-  // 隐藏答题，显示故事
   quizEl.style.display = 'none';
+
+  // 从日志构建全文
+  var log = window._narrativeLog || [];
+  var html = '';
+  var lastMission = '';
+  var missionNames = {
+    winslow: '舰队街14号 · LONDON 1899',
+    shanghai: '百乐门之夜 · SHANGHAI 1920',
+    underground: '新宿地下第七层 · TOKYO 2089',
+    rome_bath: '阿格里帕浴场 · ROME 43 BC',
+    clock: '时序管理局 · 招募面谈'
+  };
+
+  log.forEach(function(entry){
+    if(entry.mission !== lastMission){
+      html += '<div style="text-align:center;color:var(--gold);font-size:14px;letter-spacing:2px;margin:28px 0 12px;padding-top:16px;border-top:1px solid var(--border);">' + (missionNames[entry.mission] || entry.mission) + '</div>';
+      lastMission = entry.mission;
+    }
+    html += '<div style="text-align:center;color:var(--gold-dim);font-size:11px;letter-spacing:1px;margin:10px 0 6px;">' + entry.title + '</div>';
+    html += '<div style="white-space:pre-wrap;line-height:2;font-size:14px;margin-bottom:16px;">' + processText(entry.text) + '</div>';
+  });
+
+  // 没有日志时fallback到当前叙事
+  if(!html){
+    html = '<div style="text-align:center;color:var(--gold-dim);padding:40px;">还没有可回顾的故事内容。</div>';
+  }
+
   var nv = document.getElementById('narrative-view');
+  nv.innerHTML = html;
   nv.style.display = 'block';
-  // 修复回顾模式下无法滚动：CSS默认overflow:hidden + 无独立高度
   nv.style.position = 'fixed';
   nv.style.inset = '0';
   nv.style.zIndex = '200';
@@ -3547,15 +3576,6 @@ function enterReviewMode(quizType){
   nv.style.padding = '16px 24px 80px';
   nv.scrollTop = 0;
 
-  // 隐藏选择按钮（只是回顾，不需要点）
-  var choices = document.getElementById('choices');
-  if(choices) choices.style.display = 'none';
-
-  // 隐藏header里的"返回"按钮（避免跳走）
-  var header = document.getElementById('narrative-header');
-  if(header) header.style.display = 'none';
-
-  // 加浮动"返回答题"按钮
   var btn = document.createElement('button');
   btn.id = 'review-back-btn';
   btn.textContent = '← 返回答题';
@@ -3564,25 +3584,18 @@ function enterReviewMode(quizType){
 }
 
 function exitReviewMode(){
-  // 移除浮动按钮
   var btn = document.getElementById('review-back-btn');
   if(btn) btn.remove();
 
-  // 恢复故事界面原状
   var nv = document.getElementById('narrative-view');
   nv.style.display = 'none';
-  // 恢复回顾模式劫持的样式
   nv.style.position = '';
   nv.style.inset = '';
   nv.style.zIndex = '';
   nv.style.overflow = '';
   nv.style.padding = '';
-  var choices = document.getElementById('choices');
-  if(choices) choices.style.display = '';
-  var header = document.getElementById('narrative-header');
-  if(header) header.style.display = '';
+  nv.innerHTML = '';
 
-  // 回到答题
   if(reviewSave && reviewSave.quizEl){
     reviewSave.quizEl.style.display = 'flex';
   }
@@ -4765,6 +4778,7 @@ function renderClockDialogue(){
 
   var step = dialogueSteps[clockStep];
   textDiv.innerHTML = processText(step.text);
+  window._narrativeLog.push({title: '时序管理局', text: step.text, mission: 'clock'});
   body.appendChild(textDiv);
   nv.appendChild(body);
 
