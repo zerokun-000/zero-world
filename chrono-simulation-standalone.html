@@ -4679,7 +4679,7 @@ function renderClockDialogue(){
           ];
           var hs = state.exploredHotspots || {};
           // 二周目自动解锁第3选项；一周目需收集4字母
-          var zeroUnlocked = ((hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']) || state.week === 2);
+          var zeroUnlocked = (hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']);
           console.log('[renderClockDialogue] zeroUnlocked=' + zeroUnlocked + ' hs=' + JSON.stringify(hs));
           if(zeroUnlocked){
             console.log('[renderClockDialogue] >>> zero option WILL be shown');
