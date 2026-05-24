@@ -4678,7 +4678,7 @@ function renderClockDialogue(){
             {text: '"什么测试？"', tag: 'ask_test', nextStepId: 'zero_plan_brief'}
           ];
           var hs = state.exploredHotspots || {};
-          // 二周目自动解锁第3选项；一周目需收集4字母
+          // 必须在一周目4个任务中收集齐 Z/E/R/O 四个字母，才解锁此选项
           var zeroUnlocked = (hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']);
           console.log('[renderClockDialogue] zeroUnlocked=' + zeroUnlocked + ' hs=' + JSON.stringify(hs));
           if(zeroUnlocked){
