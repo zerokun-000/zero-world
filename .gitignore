@@ -21,3 +21,5 @@ _concat.txt
 nul
 .DS_Store
 Thumbs.db
+*.zip
+*.pre-gate-lock.html
