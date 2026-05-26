@@ -4594,6 +4594,18 @@ function showClueReview(){
       document.getElementById('clue-view').style.display = 'none';
     };
   }
+
+  // 动态更新footer提示：根据字母收集状态显示不同文案
+  var hintEl = document.querySelector('#clue-view .clue-footer .hint');
+  if(hintEl){
+    var hs = state.exploredHotspots || {};
+    var allLetters = hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z'];
+    if(allLetters){
+      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>如需重新评估，请输入密钥：<em>Z E R O T I M E</em>';
+    } else {
+      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>部分异常记录尚未补全。<br>档案完整性：待核实。';
+    }
+  }
 }
 
 // ===== 二周目过渡：深层权限检测 → Clock直接登场 =====
