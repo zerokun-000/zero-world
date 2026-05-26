@@ -4904,14 +4904,14 @@ function renderClockDialogue(){
         '{{po|他在说你。全都是你做过的事。一字不差。}}\n\n' +
         '"{{red|现在——告诉我。你觉得你是来救他的——还是来代替他的？}}"',
       choices: [
-        {text: '"我是来救他的。"', tag: 'insist_save'},
-        {text: '你不说话了。你在消化他说的一切', tag: 'silence'}
+        {text: '"我是来救他的。"', tag: 'insist_save', nextStepId: 'breath_weight'},
+        {text: '你不说话了。你在消化他说的一切', tag: 'silence', nextStepId: 'breath_weight'}
       ]
     },
     // 第3.6步：氛围过渡 · "代替他"的沉默
     {
       id: 'breath_weight',
-      text: '你没有马上回答。\n\n' +
+      text: '你坐在那里。\n\n' +
             '时钟没有催你。他把怀表放在桌上——表盘朝上，秒针在你视野的角落里一格格地走。\n\n' +
             '你在想刚才说的那些话。伦敦到罗马——他说的全是对的。你没有犹豫过。你在每一个场景里都走得很顺。\n\n' +
             '顺得不像第一次。\n\n' +
