@@ -2560,8 +2560,11 @@ function tryUnlock(){
 
   if(val === PASSWORDS.week1){
     // 一周目：线性任务链，自动开始
-    // 全新一周目，清除旧的热点收集数据
-    state.exploredHotspots = {};
+    // 如果已有任务完成记录（玩家在补漏字母），不清空热点收集进度
+    // 全新开始则清空，避免继承上次的数据
+    if(Object.keys(state.missionResults || {}).length === 0){
+      state.exploredHotspots = {};
+    }
     saveState();
     state.week = 1;
     console.log('[tryUnlock] -> state.week = 1');
@@ -2575,6 +2578,13 @@ function tryUnlock(){
     document.getElementById('topbar-text').textContent = '时序管理局 · 招募测试';
     startSequence();
   } else if(val === PASSWORDS.week2){
+    // 检查是否收集齐 Z/E/R/O 四个字母，否则不开放二周目
+    var hs = state.exploredHotspots || {};
+    if(!(hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z'])){
+      gateErr.textContent = '似乎还有什么没收集到的……';
+      gateInput.value = '';
+      return;
+    }
     // 二周目：直接触发Clock对话
     state.week = 2;
     saveState();   // ← 必须存！否则刷新后 week 变回 1
