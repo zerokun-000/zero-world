@@ -23,3 +23,10 @@ nul
 Thumbs.db
 *.zip
 *.pre-gate-lock.html
+*.pre-bgm-fm.html
+*.pre-narrative-overhaul.html
+bgm_demos/
+bgm_demo_*.py
+batch_bindbtn.py
+deliverables/
+backup_*/
