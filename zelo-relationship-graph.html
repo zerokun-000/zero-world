@@ -170,13 +170,7 @@ canvas:active{cursor:grabbing}
 .locked-pw-btn{background:rgba(139,105,20,.3);border:1px solid var(--gold-dim);color:var(--gold);padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .2s}
 .locked-pw-btn:hover{background:var(--gold-dim);color:#fff}
 .locked-pw-err{color:#e06060;font-size:11px;padding:0 14px 8px;background:var(--panel-bg);transition:background .4s}
-.admin-back-btn{transition:all .2s}
-  display:inline-block;margin-top:10px;
-  background:rgba(90,128,176,.15);border:1px solid rgba(90,128,176,.5);
-  color:#5a80b0;padding:8px 18px;border-radius:6px;
-  cursor:pointer;font-size:13px;font-family:inherit;letter-spacing:1px;
-  transition:all .2s;
-}
+.admin-back-btn{display:inline-block;margin-top:10px;background:rgba(90,128,176,.15);border:1px solid rgba(90,128,176,.5);color:#5a80b0;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;letter-spacing:1px;transition:all .2s}
 .admin-back-btn:hover{background:rgba(90,128,176,.3);color:#fff;border-color:rgba(90,128,176,.8)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 #bureau-alert{position:fixed;inset:0;z-index:99999;display:none;background:rgba(5,3,2,.97);flex-direction:column;align-items:center;justify-content:center;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
@@ -1020,6 +1014,8 @@ function toggleTheme(){
     // 切换到白天：金电路板
     try{document.body.style.setProperty('--circuit-svg',`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg stroke='%23c9920a' stroke-width='.7' fill='none'%3E%3Cpath d='M0 20h20M40 0v20M60 0v10M80 20H60M20 40v20M40 60v20M0 40H20M60 40H80M40 80V60M20 60H0M40 20H60M60 60h20M20 80V60'/%3E%3Cpath d='M10 10l10 10M50 10l-10 10M30 30l10 10M70 30l-10 10M10 70l10-10M50 70l-10-10M30 50l10 10M70 50l-10 10'/%3E%3C/g%3E%3Cg fill='%23c9920a'%3E%3Ccircle cx='20' cy='20' r='2.8'/%3E%3Ccircle cx='60' cy='20' r='2.8'/%3E%3Ccircle cx='20' cy='60' r='2.8'/%3E%3Ccircle cx='60' cy='60' r='2.8'/%3E%3Ccircle cx='40' cy='40' r='2.8'/%3E%3Ccircle cx='0' cy='20' r='1.8'/%3E%3Ccircle cx='80' cy='20' r='1.8'/%3E%3Ccircle cx='0' cy='60' r='1.8'/%3E%3Ccircle cx='80' cy='60' r='1.8'/%3E%3Ccircle cx='20' cy='0' r='1.8'/%3E%3Ccircle cx='60' cy='0' r='1.8'/%3E%3Ccircle cx='20' cy='80' r='1.8'/%3E%3Ccircle cx='60' cy='80' r='1.8'/%3E%3Ccircle cx='40' cy='0' r='1.8'/%3E%3Ccircle cx='40' cy='80' r='1.8'/%3E%3Ccircle cx='0' cy='40' r='1.8'/%3E%3Ccircle cx='80' cy='40' r='1.8'/%3E%3C/g%3E%3C/svg%3E")`);}catch(e){}
   }
+  _canvasBg = null;
+  markDirty();
   draw();
 }
 // 页面加载时恢复主题
@@ -1584,6 +1580,7 @@ function resize(){
   W = window.innerWidth; H = window.innerHeight;
   cv.width = W * DPR; cv.height = H * DPR;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  markDirty();
 }
 resize();
 window.addEventListener('resize', resize);
@@ -1597,6 +1594,24 @@ var isDragging = false;
 var dragSX = 0, dragSY = 0, dragCamX = 0, dragCamY = 0;
 var lastInteract = 0;
 var nodePos = {};
+var _connSet = {};        // 缓存：当前hub的连接节点集
+var _connSetHub = null;   // 缓存对应的hub id
+var _canvasBg = null;     // 缓存canvas背景色
+var _needsRedraw = true;  // 脏标记
+
+function rebuildConnSet(){
+  _connSet = {};
+  links.forEach(function(l){
+    if(l.from === hub) _connSet[l.to] = true;
+    if(l.to === hub) _connSet[l.from] = true;
+  });
+  _connSetHub = hub;
+}
+function getConnSet(){
+  if(_connSetHub !== hub) rebuildConnSet();
+  return _connSet;
+}
+function markDirty(){ _needsRedraw = true; }
 
 function getInnerR(){ return Math.min(W, H) * 0.22; }
 function getOuterR(){ return getInnerR() * 2.3; }
@@ -1649,26 +1664,42 @@ nodes.forEach(function(n){ var p = nodePos[n.id]; if(p){ p.x = p.tx; p.y = p.ty;
 
 function setHub(id){
   hub = id;
+  rebuildConnSet();
   computeLayout();
   cam = {x: 0, y: 0, zoom: 1};
   lastInteract = Date.now();
+  markDirty();
 }
 
 // ===== DRAW =====
 function draw(){
   // Animate positions smoothly
   var sp = 0.08;
+  var stillAnimating = false;
   nodes.forEach(function(n){
     var p = nodePos[n.id];
     if(!p) return;
-    p.x += (p.tx - p.x) * sp;
-    p.y += (p.ty - p.y) * sp;
+    var dx = p.tx - p.x, dy = p.ty - p.y;
+    if(Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1){
+      p.x += dx * sp;
+      p.y += dy * sp;
+      stillAnimating = true;
+    } else {
+      p.x = p.tx; p.y = p.ty;
+    }
   });
+
+  // Skip redraw if nothing changed
+  if(!_needsRedraw && !stillAnimating) return;
+  _needsRedraw = false;
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
-  // Canvas background from CSS variable (day/night theme)
-  try{ ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--canvas-bg').trim() || '#120f0a'; }catch(e){ ctx.fillStyle = '#120f0a'; }
+  // Canvas background (cached)
+  if(!_canvasBg){
+    try{ _canvasBg = getComputedStyle(document.body).getPropertyValue('--canvas-bg').trim() || '#120f0a'; }catch(e){ _canvasBg = '#120f0a'; }
+  }
+  ctx.fillStyle = _canvasBg;
   ctx.fillRect(0, 0, W, H);
 
   ctx.save();
@@ -1677,12 +1708,8 @@ function draw(){
 
   var IR = getInnerR(), OR = getOuterR();
 
-  // Build connection set for current hub
-  var connSet = {};
-  links.forEach(function(l){
-    if(l.from === hub) connSet[l.to] = true;
-    if(l.to === hub) connSet[l.from] = true;
-  });
+  // Use cached connection set
+  var connSet = getConnSet();
 
   // Ring guides (dashed circles)
   ctx.strokeStyle = 'rgba(212,168,67,0.12)';
@@ -1788,11 +1815,7 @@ function screenToWorld(sx, sy){
 function findNodeAt(sx, sy){
   var wp = screenToWorld(sx, sy);
   var best = null, bestD = Infinity;
-  var connSet = {};
-  links.forEach(function(l){
-    if(l.from === hub) connSet[l.to] = true;
-    if(l.to === hub) connSet[l.from] = true;
-  });
+  var connSet = getConnSet();
   for(var i = 0; i < nodes.length; i++){
     var n = nodes[i], p = nodePos[n.id];
     if(!p) continue;
@@ -1819,12 +1842,14 @@ cv.addEventListener('mousemove', function(e){
     cam.x = dragCamX + (e.clientX - dragSX);
     cam.y = dragCamY + (e.clientY - dragSY);
     lastInteract = Date.now();
+    markDirty();
   } else {
     var n = findNodeAt(e.clientX, e.clientY);
     var prev = hoveredNode ? nodeMap[hoveredNode] : null;
     if(n !== prev){
       hoveredNode = n ? n.id : null;
       cv.style.cursor = n ? 'pointer' : 'grab';
+      markDirty();
       var tip = document.getElementById('tip');
       if(n){
         tip.style.display = 'block';
@@ -1853,6 +1878,7 @@ cv.addEventListener('mouseup', function(e){
 cv.addEventListener('mouseleave', function(){
   hoveredNode = null;
   document.getElementById('tip').style.display = 'none';
+  markDirty();
 });
 
 cv.addEventListener('wheel', function(e){
@@ -1860,6 +1886,7 @@ cv.addEventListener('wheel', function(e){
   cam.zoom *= e.deltaY > 0 ? 0.92 : 1.08;
   cam.zoom = Math.max(0.3, Math.min(3, cam.zoom));
   lastInteract = Date.now();
+  markDirty();
 }, {passive: false});
 
 cv.addEventListener('touchstart', function(e){
@@ -1883,11 +1910,13 @@ cv.addEventListener('touchmove', function(e){
   if(e.touches.length === 1 && isDragging){
     cam.x = dragCamX + (e.touches[0].clientX - dragSX);
     cam.y = dragCamY + (e.touches[0].clientY - dragSY);
+    markDirty();
   } else if(e.touches.length === 2 && pinchStart){
     var dx = e.touches[1].clientX - e.touches[0].clientX;
     var dy = e.touches[1].clientY - e.touches[0].clientY;
     var d = Math.sqrt(dx * dx + dy * dy);
     cam.zoom = Math.max(0.3, Math.min(3, pinchZoom * (d / pinchStart)));
+    markDirty();
   }
   lastInteract = Date.now();
 }, {passive: false});
@@ -1979,6 +2008,7 @@ function showDetail(id){
 function closeDetail(){
   document.getElementById('detail').classList.remove('show');
   highlightNode = null;
+  markDirty();
 }
 function clearHighlight(){ closeDetail(); }
 
@@ -2162,9 +2192,11 @@ document.addEventListener('keydown', function(e){
 
 function resetView(){
   hub = "zero";
+  rebuildConnSet();
   computeLayout();
   cam = {x:0, y:0, zoom:1};
   highlightNode = null;
+  markDirty();
 }
 
 // ===== STORY VIEWER (with anchor scroll) =====
