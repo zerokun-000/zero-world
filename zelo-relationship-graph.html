@@ -164,6 +164,7 @@ canvas:active{cursor:grabbing}
 .locked-overlay .lock-text{font-size:12px;color:#8b7355}
 .locked-content{padding:0 0 4px;display:none}
 .locked-content.unlocked{display:block;animation:fadeIn .3s}
+.story-list-item:hover{border-color:#8b6914!important;background:rgba(139,105,20,.15)!important}
 .locked-pw-row{display:flex;gap:8px;padding:10px 14px;background:var(--panel-bg);align-items:center;transition:background .4s}
 .locked-pw-input{flex:1;background:rgba(20,16,10,.9);border:1px solid var(--border);border-radius:4px;color:var(--gold);padding:6px 10px;font-size:13px;outline:none;font-family:inherit;transition:border-color .4s,color .4s}
 .locked-pw-input:focus{border-color:var(--gold)}
@@ -1391,19 +1392,12 @@ var storiesLoaded = false;
 
 function loadStories(){
   if(storiesLoaded) return Promise.resolve();
-  // Try fetch first, fall back to inline data
+  // 故事数据内联在 _STORY_DATA（文件末尾），支持 file:// 协议零依赖部署
   if(typeof _STORY_DATA !== 'undefined' && _STORY_DATA){
     _STORY_DATA.forEach(function(s){ storyCache[s.title] = s.content; });
     storiesLoaded = true;
-    return Promise.resolve();
   }
-  return fetch(new URL('zelo-stories.json', location.href).href).then(function(r){ return r.json(); }).then(function(data){
-    data.forEach(function(s){ storyCache[s.title] = s.content; });
-    storiesLoaded = true;
-  }).catch(function(e){
-    console.error('Failed to load stories:', e);
-    storiesLoaded = true; // prevent retry loop
-  });
+  return Promise.resolve();
 }
 
 // Build relation lookup
@@ -1457,7 +1451,11 @@ function eggWelcome(){
   if(inp){ inp.value = ''; inp.focus(); }
   if(err) err.textContent = '';
 
-  // 确认按钮
+  // 用命名引用存储在元素上，防止重复绑定
+  if(submitBtn._handler) submitBtn.removeEventListener('click', submitBtn._handler);
+  if(skipBtn._handler) skipBtn.removeEventListener('click', skipBtn._handler);
+  if(inp && inp._handler) inp.removeEventListener('keydown', inp._handler);
+
   function doConfirm(){
     var name = inp ? inp.value.trim() : '';
     if(!name){
@@ -1467,23 +1465,19 @@ function eggWelcome(){
     modal.classList.remove('show');
     enterEggSession(name);
   }
-
-  // 跳过匿名
   function doSkip(){
-    console.log('[DEBUG] doSkip called');
     modal.classList.remove('show');
     enterEggSession('');
   }
+  function doKey(e){ if(e.key === 'Enter') doConfirm(); }
 
-  // 移除旧事件，防止重复绑定
-  submitBtn.removeEventListener('click', doConfirm);
-  skipBtn.removeEventListener('click', doSkip);
-
-  // 绑定事件
+  submitBtn._handler = doConfirm;
+  skipBtn._handler = doSkip;
   submitBtn.addEventListener('click', doConfirm);
   skipBtn.addEventListener('click', doSkip);
   if(inp){
-    inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') doConfirm(); });
+    inp._handler = doKey;
+    inp.addEventListener('keydown', doKey);
   }
 }
 
@@ -1517,7 +1511,10 @@ function enterEggSession(name){
   }, 500);
 }
 window.enterEggSession = enterEggSession;
+var _guestLockApplied = false;
 function applyGuestLock(){
+  if(_guestLockApplied) return;
+  _guestLockApplied = true;
   // CSS: 禁止文本选中
   var s = document.createElement('style');
   s.id = 'guest-lock';
@@ -1922,7 +1919,8 @@ cv.addEventListener('touchmove', function(e){
 }, {passive: false});
 
 cv.addEventListener('touchend', function(e){
-  if(e.changedTouches.length === 1 && isDragging){
+  // 只在单指触摸且未发生pinch缩放时判定为点击
+  if(e.changedTouches.length === 1 && isDragging && !pinchStart){
     var dx = e.changedTouches[0].clientX - dragSX;
     var dy = e.changedTouches[0].clientY - dragSY;
     if(Math.abs(dx) < 12 && Math.abs(dy) < 12){
@@ -1936,6 +1934,8 @@ cv.addEventListener('touchend', function(e){
 });
 
 // ===== DETAIL PANEL =====
+function _escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function showDetail(id){
   var n = nodeMap[id];
   if(!n) return;
@@ -1945,25 +1945,23 @@ function showDetail(id){
   document.getElementById('d-sub').textContent = n.sub;
 
   var html = '<div class="sec"><div class="sec-title">标签</div>';
-  n.tags.forEach(function(t){ html += '<span class="tag">'+t+'</span>'; });
+  n.tags.forEach(function(t){ html += '<span class="tag">'+_escHtml(t)+'</span>'; });
   html += '</div>';
   html += '<div class="sec"><div class="sec-title">简介</div><div class="sec-text">'+n.intro+'</div></div>';
   if(n.quote) html += '<div class="sec"><div class="sec-title">标志台词</div><div class="sec-text"><span class="quote">'+n.quote+'</span></div></div>';
 
-  // Related stories (with anchor support)
+  // Related stories (data-attribute + event delegation)
   if(n.stories && n.stories.length){
     html += '<div class="sec"><div class="sec-title">相关故事</div>';
     n.stories.forEach(function(sid){
       var info = storyIndex[sid];
-      if(info){
-        var anchor = (n.storyAnchors && n.storyAnchors[sid]) ? n.storyAnchors[sid] : '';
-        var anchorParam = anchor ? ", '"+anchor.replace(/'/g, "\\'")+"'" : '';
-        html += '<div class="story-link" onclick="openStory(\''+sid+'\''+anchorParam+')">';
-        html += '<span class="sl-icon">\uD83D\uDCD6</span>';
-        html += '<span class="sl-title">'+info.title+'</span>';
-        if(anchor) html += '<span class="sl-anchor">\u2192 '+anchor+'</span>';
-        html += '<span class="sl-time">'+info.time+'</span></div>';
-      }
+      if(!info) return;
+      var anchor = (n.storyAnchors && n.storyAnchors[sid]) ? n.storyAnchors[sid] : '';
+      html += '<div class="story-link" data-sid="'+_escHtml(sid)+'" data-anchor="'+_escHtml(anchor)+'">';
+      html += '<span class="sl-icon">\uD83D\uDCD6</span>';
+      html += '<span class="sl-title">'+_escHtml(info.title)+'</span>';
+      if(anchor) html += '<span class="sl-anchor">\u2192 '+_escHtml(anchor)+'</span>';
+      html += '<span class="sl-time">'+_escHtml(info.time)+'</span></div>';
     });
     html += '</div>';
   }
@@ -1980,7 +1978,7 @@ function showDetail(id){
     } else {
       html += '<div class="sec"><div class="sec-title">\uD83D\uDCD6 机密档案 [\u7BA1\u7406\u5C40\u6388\u6743]</div>';
       html += '<div class="locked-box" id="'+unlockId+'">';
-      html += '<div class="locked-overlay" id="'+unlockId+'-ov" onclick="showLockedPw(\''+unlockId+'\')"><div class="lock-icon">\uD83D\uDD12</div><div class="lock-text">\u4EC5\u7BA1\u7406\u5C40\u6388\u6743\u4EBA\u7269\u53EF\u67E5\u770B</div></div>';
+      html += '<div class="locked-overlay" id="'+unlockId+'-ov" data-uid="'+unlockId+'"><div class="lock-icon">\uD83D\uDD12</div><div class="lock-text">\u4EC5\u7BA1\u7406\u5C40\u6388\u6743\u4EBA\u7269\u53EF\u67E5\u770B</div></div>';
       html += '<div class="locked-content" id="'+unlockId+'-ct"><div class="sec-text" style="padding:0 0 8px;line-height:1.9;color:#c0b090">'+appearanceText.replace(/\n/g,'<br>')+'</div></div>';
       html += '</div></div>';
     }
@@ -1989,7 +1987,7 @@ function showDetail(id){
   // 管理局后台入口（仅 isOwner 可见，在外貌描写下方）
   if(window.isOwner){
     html += '<div class="sec" style="margin-top:16px"><div class="sec-title">&#128737; 管理局</div>';
-    html += '<button class="admin-back-btn" onclick="enterAdminBackend()">&#128202; 进入管理局后台</button></div>';
+    html += '<button class="admin-back-btn" data-action="enterAdmin">&#128202; 进入管理局后台</button></div>';
   }
 
   var rels = relMap[id];
@@ -1997,7 +1995,7 @@ function showDetail(id){
     html += '<div class="sec"><div class="sec-title">关系（点击跳转）</div>';
     rels.forEach(function(r){
       var tn = nodeMap[r.target];
-      html += '<div class="rel-item" onclick="showDetail(\''+r.target+'\')"><span class="rel-arrow">\u25B6</span><span class="rel-name">'+(tn?tn.name:r.target)+'</span><span class="rel-label">'+r.label+'</span></div>';
+      html += '<div class="rel-item" data-target="'+_escHtml(r.target)+'"><span class="rel-arrow">\u25B6</span><span class="rel-name">'+(tn?_escHtml(tn.name):_escHtml(r.target))+'</span><span class="rel-label">'+_escHtml(r.label)+'</span></div>';
     });
     html += '</div>';
   }
@@ -2010,6 +2008,37 @@ function closeDetail(){
   highlightNode = null;
   markDirty();
 }
+// 事件委托：详情面板内所有可点击元素
+document.getElementById('d-body').addEventListener('click', function(e){
+  // 故事链接
+  var link = e.target.closest('.story-link');
+  if(link){
+    var sid = link.getAttribute('data-sid');
+    var anchor = link.getAttribute('data-anchor') || '';
+    if(sid) openStory(sid, anchor);
+    return;
+  }
+  // 关系跳转
+  var rel = e.target.closest('.rel-item');
+  if(rel){
+    var target = rel.getAttribute('data-target');
+    if(target) showDetail(target);
+    return;
+  }
+  // 机密档案解锁
+  var lock = e.target.closest('.locked-overlay');
+  if(lock){
+    var uid = lock.getAttribute('data-uid');
+    if(uid) showLockedPw(uid);
+    return;
+  }
+  // 管理局后台入口
+  var adminBtn = e.target.closest('[data-action="enterAdmin"]');
+  if(adminBtn){
+    enterAdminBackend();
+    return;
+  }
+});
 function clearHighlight(){ closeDetail(); }
 
 // ===== LOCKED CONTENT UNLOCK (bureau modal style) =====
@@ -2195,8 +2224,7 @@ function resetView(){
   rebuildConnSet();
   computeLayout();
   cam = {x:0, y:0, zoom:1};
-  highlightNode = null;
-  markDirty();
+  closeDetail();
 }
 
 // ===== STORY VIEWER (with anchor scroll) =====
@@ -2241,11 +2269,11 @@ function showStoryList(){
     });
     sorted.forEach(function(sid){
       var info = storyIndex[sid];
-      html += '<div style="margin:12px 0;padding:16px 20px;background:rgba(139,105,20,.08);border:1px solid rgba(139,105,20,.2);border-radius:6px;cursor:pointer;transition:all .2s" onclick="openStory(\''+sid+'\')" onmouseover="this.style.borderColor=\'#8b6914\';this.style.background=\'rgba(139,105,20,.15)\'" onmouseout="this.style.borderColor=\'rgba(139,105,20,.2)\';this.style.background=\'rgba(139,105,20,.08)\'">';
-      html += '<div style="color:#d4a843;font-size:16px;margin-bottom:4px">'+info.title+'</div>';
+      html += '<div class="story-list-item" data-sid="'+_escHtml(sid)+'" style="margin:12px 0;padding:16px 20px;background:rgba(139,105,20,.08);border:1px solid rgba(139,105,20,.2);border-radius:6px;cursor:pointer;transition:all .2s">';
+      html += '<div style="color:#d4a843;font-size:16px;margin-bottom:4px">'+_escHtml(info.title)+'</div>';
       html += '<div style="display:flex;gap:16px;align-items:center">';
-      html += '<span style="color:#8b7355;font-size:12px;background:rgba(139,105,20,.15);padding:2px 8px;border-radius:3px">'+info.time+'</span>';
-      html += '<span style="color:#8b7355;font-size:13px">'+info.desc+'</span>';
+      html += '<span style="color:#8b7355;font-size:12px;background:rgba(139,105,20,.15);padding:2px 8px;border-radius:3px">'+_escHtml(info.time)+'</span>';
+      html += '<span style="color:#8b7355;font-size:13px">'+_escHtml(info.desc)+'</span>';
       html += '</div></div>';
     });
     document.getElementById('sv-title').textContent = '全部故事';
@@ -2261,6 +2289,16 @@ function closeStory(){
   document.getElementById('story-viewer').classList.remove('show');
   document.getElementById('sv-back').style.display = 'none';
 }
+// 事件委托：故事列表点击（替代内联onclick）
+document.getElementById('sv-body').addEventListener('click', function(e){
+  var item = e.target.closest('.story-list-item');
+  if(item){
+    var sid = item.getAttribute('data-sid');
+    if(sid) openStory(sid);
+    return;
+  }
+  // 故事内容里的链接也可以委托（如果将来需要）
+});
 
 // Simple Markdown to HTML
 function md2html(md){
@@ -2321,18 +2359,34 @@ searchInput.addEventListener('input', function(){
   if(charResults.length){
     html += '<div class="drop-section">角色</div>';
     charResults.forEach(function(n){
-      html += '<div class="drop-item" onclick="selectCharSearch(\''+n.id+'\')"><div class="drop-icon" style="background:'+n.color+'"></div><div class="drop-name">'+n.name+'</div><div class="drop-sub">'+n.sub.split('\u00B7')[0].trim()+'</div></div>';
+      html += '<div class="drop-item" data-char="'+_escHtml(n.id)+'"><div class="drop-icon" style="background:'+n.color+'"></div><div class="drop-name">'+_escHtml(n.name)+'</div><div class="drop-sub">'+_escHtml(n.sub.split('\u00B7')[0].trim())+'</div></div>';
     });
   }
   if(storyResults.length){
     html += '<div class="drop-section">故事</div>';
     storyResults.forEach(function(sid){
       var info = storyIndex[sid];
-      html += '<div class="drop-item" onclick="openStory(\''+sid+'\');document.getElementById(\'search-drop\').style.display=\'none\'"><div class="drop-icon" style="background:#e06060"></div><div class="drop-name">'+info.title+'</div><div style="color:#555;font-size:10px;margin-left:auto">'+info.time+'</div></div>';
+      html += '<div class="drop-item" data-story="'+_escHtml(sid)+'"><div class="drop-icon" style="background:#e06060"></div><div class="drop-name">'+_escHtml(info.title)+'</div><div style="color:#555;font-size:10px;margin-left:auto">'+_escHtml(info.time)+'</div></div>';
     });
   }
   searchDrop.innerHTML = html;
   searchDrop.style.display = 'block';
+});
+
+// 事件委托：搜索下拉点击
+searchDrop.addEventListener('click', function(e){
+  var charItem = e.target.closest('[data-char]');
+  if(charItem){
+    selectCharSearch(charItem.getAttribute('data-char'));
+    searchDrop.style.display = 'none';
+    return;
+  }
+  var storyItem = e.target.closest('[data-story]');
+  if(storyItem){
+    openStory(storyItem.getAttribute('data-story'));
+    searchDrop.style.display = 'none';
+    return;
+  }
 });
 
 searchInput.addEventListener('blur', function(){
