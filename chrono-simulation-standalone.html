@@ -430,7 +430,7 @@ body {
   padding: 24px 32px;
   overflow-y: auto;
   line-height: 2;
-  font-size: 14px;
+  font-size: 15px;
   position: relative;
 }
 #narrative-body .text {
@@ -528,7 +528,7 @@ body {
   border-radius: 6px;
   padding: 14px 20px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   text-align: left;
   cursor: pointer;
   font-family: inherit;
@@ -572,7 +572,7 @@ body {
 }
 #ending-view .text {
   color: var(--text);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 2;
   white-space: pre-wrap;
   max-width: 500px;
@@ -797,13 +797,13 @@ body[data-week="2"] #gate::before {
   }
   #narrative-body {
     padding: 16px 18px;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 2;
     overflow-y: auto;
     flex: 1;
   }
   #narrative-body .text {
-    font-size: 13px;
+    font-size: 14px;
     line-height: 2;
     white-space: pre-wrap;
     word-break: break-word;
@@ -824,7 +824,7 @@ body[data-week="2"] #gate::before {
   }
   .choice-btn {
     padding: 14px 16px;
-    font-size: 13px;
+    font-size: 14px;
     min-height: 48px;
     display: flex;
     align-items: center;
@@ -855,13 +855,13 @@ body[data-week="2"] #gate::before {
 
 @media (max-width: 400px) {
   #intro-page .intro-text { font-size: 10px; line-height: 1.4; }
-  #narrative-body { padding: 12px 14px; font-size: 12px; }
-  #narrative-body .text { font-size: 12px; }
-  .choice-btn { font-size: 12px; padding: 12px 14px; min-height: 44px; }
+  #narrative-body { padding: 12px 14px; font-size: 13px; }
+  #narrative-body .text { font-size: 13px; }
+  .choice-btn { font-size: 13px; padding: 12px 14px; min-height: 44px; }
   #gate h1 { font-size: 17px; letter-spacing: 3px; }
   #gate .sub { font-size: 10px; }
   #hypno-text div { font-size: 22px !important; letter-spacing: 8px !important; }
-  #ending-view .text { font-size: 11px; }
+  #ending-view .text { font-size: 13px; }
 }
 
 /* 刘海屏安全区 */
@@ -1163,7 +1163,7 @@ body[data-week="2"] #gate::before {
 }
 #clue-view .clue-item .text {
   color: #ccc;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.9;
 }
 #clue-view .clue-item:hover {
@@ -1280,7 +1280,7 @@ body[data-week="2"] #gate::before {
 }
 #hotspot-overlay .hotspot-body {
   color: var(--text);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 2.2;
   white-space: pre-wrap;
   flex: 1;
@@ -4474,7 +4474,7 @@ function showConvergenceEnding(){
       '<div style="font-size:48px;margin-bottom:20px;opacity:0.5;">&#9899;</div>' +
       '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:8px;">四 阶 段 模 拟 完 成</div>' +
       '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:3px;margin-bottom:36px;">四个阶段 · 模拟完成</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.5;max-width:520px;text-align:left;white-space:pre-wrap;">' +
+      '<div style="color:var(--text);font-size:15px;line-height:2.5;max-width:520px;text-align:left;white-space:pre-wrap;">' +
         processText(finalTextContent) +
       '</div>' +
       '<div style="margin-top:40px;color:var(--gold-faint);font-size:11px;letter-spacing:2px;opacity:0.5;">—— 也许，你漏掉了什么东西 ——</div>' +
@@ -5242,7 +5242,7 @@ function showZeloFinale(){
     '<div style="font-size:56px;margin-bottom:20px;color:var(--gold);">' + endingSymbol + '</div>' +
     '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:10px;">' + endingTitle + '</div>' +
     '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">真结局 · 泽罗路线</div>' +
-    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;" id="zelo-finale-text"></div>' +
+    '<div style="color:var(--text);font-size:15px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;" id="zelo-finale-text"></div>' +
     '<button onclick="location.href=location.href.split(String.fromCharCode(63))[0]+String.fromCharCode(63)+String.fromCharCode(118)+Date.now()" style="' +
     '  margin-top:36px;' +
     '  background:rgba(139,105,20,0.3);' +
@@ -5494,7 +5494,7 @@ function showClockEnding(){
     '<div style="font-size:56px;margin-bottom:20px;color:var(--red);">&#9760;</div>' +
     '<div style="color:var(--red);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结 局 · 强 制 改 造</div>' +
     '<div style="color:var(--red-dim);font-size:11px;letter-spacing:2px;margin-bottom:36px;">强制改造 · 完成</div>' +
-    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+    '<div style="color:var(--text);font-size:15px;line-height:2.2;max-width:500px;text-align:left;">' +
     processText('你没有选择的权利。\n\n' +
     '时钟从你面前拿起那块怀表。表盖是打开的。秒针在走。\n\n' +
     '滴答。滴答。滴答。\n\n' +
@@ -5603,7 +5603,7 @@ function showClockSpareEnding(){
     '<div style="font-size:56px;margin-bottom:20px;color:var(--blue);">&#10047;</div>' +
     '<div style="color:var(--blue);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结 局 · 各 走 各 路</div>' +
     '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">再见 · 记忆清除</div>' +
-    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+    '<div style="color:var(--text);font-size:15px;line-height:2.2;max-width:500px;text-align:left;">' +
     processText('破球的光带在你身后闪了一下——然后退回了暗处。\n\n' +
     '时钟把怀表翻回来。表盘朝上。\n\n' +
     '他看了你一眼。你没有躲开。\n\n' +
@@ -5662,7 +5662,7 @@ function showFinalEnding(choice){
       '<div style="font-size:56px;margin-bottom:20px;color:var(--gold);">&#9733;</div>' +
       '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:10px;">真结局 · 泽罗路线</div>' +
       '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">真结局 · 泽罗路线</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      '<div style="color:var(--text);font-size:15px;line-height:2.2;max-width:500px;text-align:left;">' +
       processText('你选择了接受泽罗的帮助。\n\n' +
       '泽罗履行了承诺。\n\n' +
       '第一步：他侵入了管理局的系统，将你的所有数据标记为"已删除"。\n' +
@@ -5690,7 +5690,7 @@ function showFinalEnding(choice){
       '<div style="font-size:56px;margin-bottom:20px;color:var(--red);">&#9760;</div>' +
       '<div style="color:var(--red);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结局 · 管理局路线</div>' +
       '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">接受条款 · 管理局路线</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      '<div style="color:var(--text);font-size:15px;line-height:2.2;max-width:500px;text-align:left;">' +
       processText('破球退回了暗处。时钟把怀表翻回来——表盘朝上，秒针继续走。\n\n' +
       '他看了你一眼。点了点头。\n\n' +
       '{{po|你没有跟泽罗走。你选择留在这里。}}\n\n' +
@@ -5720,7 +5720,7 @@ function showFinalEnding(choice){
       '<div style="font-size:56px;margin-bottom:20px;color:#888;">&#10047;</div>' +
       '<div style="color:#aaa;font-size:18px;letter-spacing:4px;margin-bottom:10px;">真结局 · 拒绝双方</div>' +
       '<div style="color:#666;font-size:11px;letter-spacing:2px;margin-bottom:36px;">真结局 · 全都拒绝</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      '<div style="color:var(--text);font-size:15px;line-height:2.2;max-width:500px;text-align:left;">' +
       processText('你拒绝了所有选择。\n\n' +
       '泽罗说得对——三个选项都是陷阱。\n\n' +
       '泽罗帮你处理了所有痕迹。\n' +
