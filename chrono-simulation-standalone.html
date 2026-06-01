@@ -1117,6 +1117,42 @@ body[data-week="2"] #gate::before {
   background: rgba(212,168,67,0.04);
   border-radius: 0 4px 4px 0;
   transition: all .3s;
+  cursor: pointer;
+}
+#clue-view .clue-item .clue-detail {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height .4s ease, opacity .3s ease, margin .3s ease;
+  margin-top: 0;
+}
+#clue-view .clue-item.expanded .clue-detail {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 10px;
+}
+#clue-view .clue-item .clue-preview {
+  color: var(--gold);
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity .3s;
+}
+#clue-view .clue-item.expanded .clue-preview {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin: 0;
+}
+#clue-view .clue-item .expand-hint {
+  color: var(--gold-faint);
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.4;
+  margin-top: 6px;
+  transition: opacity .3s;
+}
+#clue-view .clue-item.expanded .expand-hint {
+  opacity: 0;
 }
 #clue-view .clue-item .index {
   color: var(--gold);
@@ -1556,7 +1592,7 @@ body[data-week="2"] #gate::before {
   </div>
   <div id="clue-content"></div>
   <div class="clue-footer">
-    <div class="hint">系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>如需重新评估，请输入密钥：<em>Z E R O T I M E</em></div>
+    <div class="hint">系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>四组磨损字母，五步偏移，首字为钥。</div>
     <button class="clue-close-btn" id="clue-close-btn">关 闭 档 案</button>
   </div>
 </div>
@@ -1638,7 +1674,7 @@ STORIES.winslow = [
                '他没有再说下去。你也没追问。\n\n' +
                '屋子里只剩下壁炉里木柴烧裂的声音。',
     hotspots: [
-      {id: 'w1_globe', keyword: '黄铜地球仪', letterKey: 'w1_E', content: '你走近窗边的矮柜。地球仪在你面前安静地亮着，金色的光从经纬线缝隙间一明一暗地透出来，像心跳的节奏。\n\n你蹲下来，把视线平齐到它的底座。\n\n蚀刻在底座边缘——一道极细的凹痕。不是随意划的，每一笔的深浅都经过计算。是一个字母。\n\nE。\n\n你用指甲刮了一下那个字母的边缘。尖锐。刻的人在很用力。\n\n你的指腹停在字母上。它比你想象中要暖。你不确定这个温度是来自地球仪本身，还是来自你自己。'}
+      {id: 'w1_globe', keyword: '黄铜地球仪', letterKey: 'w1_E', content: '你走近窗边的矮柜。地球仪在你面前安静地亮着，金色的光从经纬线缝隙间一明一暗地透出来，像心跳的节奏。\n\n你蹲下来，把视线平齐到它的底座。\n\n蚀刻在底座边缘——一行极细的凹痕。不是随意划的，每一笔的深浅都经过计算。是一行磨损的字母。\n\nJ F W Y M。\n\n你用指甲刮了一下那些字母的边缘。尖锐。刻的人在很用力。\n\n你的指腹停在字母上。它们比你想象中要暖。你不确定这个温度是来自地球仪本身，还是来自你自己。'}
     ],
     choices: [
       {text: '你走到窗边。伸手去碰那个地球仪——你想试试它到底会不会认你', tag: 'approach'},
@@ -1676,7 +1712,7 @@ STORIES.winslow = [
     title: '信',
     narrative_before_talk: '你在老人对面坐下来。桌上摊着一封信，抬头写着"亲爱的艾德蒙"。但信的内容很简短——\n\n' +
                            '"今天又下雨了。和每天一样。\n我写了一封信给你。和每天一样。\n我不知道你在哪里。\n但我知道你会来。"\n\n' +
-                           '日期是十年前。\n\n' +
+                           '日期是十年前。\n\n远处钟楼传来钟声。你数了一下——敲响了5次。\n\n' +
                            '你又翻了几封。字迹在变化——从清楚到潦草，又从潦草回到清楚。一个人在漫长的十一年里反反复复地崩溃又重建自己，全都写在了笔迹里。\n\n' +
                            '"这些信是写给谁的？"\n\n' +
                            '老人摇了摇头。\n\n' +
@@ -1810,7 +1846,7 @@ STORIES.shanghai = [
                              '"反着问"？你盯着他消失在走廊尽头的背影。\n\n' +
                              '你不认识他。但他说的那句话的语气让你觉得——你们不是第一次见面。',
     hotspots: [
-      {id: 's2_starplate', keyword: '银色的星盘', letterKey: 's2_R', content: '你低头看着手里的星盘。银色的盘面在你掌心里微微发烫——不是金属被体温捂热的那种，是它在用自己的方式告诉你：它认得你。\n\n你翻过来。背面的蚀刻比正面更细致，用针尖一笔一笔描出来的。\n\n是一个字母。\n\nR。\n\n你用指腹划过它的凹痕。尖锐。用力刻下它的人一定很急——像是怕自己来不及。\n\n温热。和伦敦那只地球仪一样的温度。\n\n你忽然觉得这些字母不是被刻上去的——更像是被**按**进去的。按进去之前，它们曾经属于某个更大的、被拆开的东西。'}
+      {id: 's2_starplate', keyword: '银色的星盘', letterKey: 's2_R', content: '你低头看着手里的星盘。银色的盘面在你掌心里微微发烫——不是金属被体温捂热的那种，是它在用自己的方式告诉你：它认得你。\n\n你翻过来。背面的蚀刻比正面更细致，用针尖一笔一笔描出来的。\n\n是一行磨损的字母。\n\nW T Z Y J。\n\n你用指腹划过那些凹痕。尖锐。用力刻下它们的人一定很急——像是怕自己来不及。\n\n温热。和伦敦那只地球仪一样的温度。\n\n你忽然觉得这些字母不是被刻上去的——更像是被**按**进去的。按进去之前，它们曾经属于某个更大的、被拆开的东西。'}
     ],
     choices: [
       {text: '你打开星盘。看看里面到底有什么', tag: 'open'},
@@ -1861,7 +1897,7 @@ STORIES.shanghai = [
                                '你看着手里的星盘。疤面男人手腕上那个圆形的灼痕在你脑子里闪了一下。他说打开会发光——他说它认识被选上的人。\n\n' +
                                '你的手指按在星盘的上盖边缘。',
     hotspots: [
-      {id: 's2_starplate', keyword: '银色的星盘', letterKey: 's2_R', content: '你低头看着手里的星盘。银色的盘面在你掌心里微微发烫——不是金属被体温捂热的那种，是它在用自己的方式告诉你：它认得你。\n\n你翻过来。背面的蚀刻比正面更细致，用针尖一笔一笔描出来的。\n\n是一个字母。\n\nR。\n\n你用指腹划过它的凹痕。尖锐。用力刻下它的人一定很急——像是怕自己来不及。\n\n温热。和伦敦那只地球仪一样的温度。\n\n你忽然觉得这些字母不是被刻上去的——更像是被**按**进去的。按进去之前，它们曾经属于某个更大的、被拆开的东西。'}
+      {id: 's2_starplate', keyword: '银色的星盘', letterKey: 's2_R', content: '你低头看着手里的星盘。银色的盘面在你掌心里微微发烫——不是金属被体温捂热的那种，是它在用自己的方式告诉你：它认得你。\n\n你翻过来。背面的蚀刻比正面更细致，用针尖一笔一笔描出来的。\n\n是一行磨损的字母。\n\nW T Z Y J。\n\n你用指腹划过那些凹痕。尖锐。用力刻下它们的人一定很急——像是怕自己来不及。\n\n温热。和伦敦那只地球仪一样的温度。\n\n你忽然觉得这些字母不是被刻上去的——更像是被**按**进去的。按进去之前，它们曾经属于某个更大的、被拆开的东西。'}
     ],
     choices: [
       {text: '你掀开上盖。疤面男人警告过你——但你得亲眼看看', tag: 'open'},
@@ -1964,7 +2000,7 @@ STORIES.underground = [
                '你没说话。\n\n' +
                '你看着桌上那个圆形的金属。温热。它在发光。',
     hotspots: [
-      {id: 'u3_device', keyword: '圆形的金属装置', letterKey: 'u3_O', content: '你伸出手，把装置拿起来。\n\n比预想的沉。外壳上有一圈细密的刻度，中心有一个凹陷，刚好容纳一根手指。你翻过来——侧面有一行极小的蚀刻，不是刻度。\n\n是一个字母。\n\nO。\n\n凹痕的深度让你停了一下。这不是刻上去的——是被**压**进去的，像是从另一面用了极大的力量，把这个字母嵌进了金属本体里。\n\n你的指甲刮过凹痕的边缘。尖锐。\n\n温热。\n\n和之前两个一样的温度。你的心跳快了半拍。'}
+      {id: 'u3_device', keyword: '圆形的金属装置', letterKey: 'u3_O', content: '你伸出手，把装置拿起来。\n\n比预想的沉。外壳上有一圈细密的刻度，中心有一个凹陷，刚好容纳一根手指。你翻过来——侧面有一行极小的蚀刻，不是刻度。\n\n是一行磨损的字母。\n\nE J F Q T Y。\n\n凹痕的深度让你停了一下。这不是刻上去的——是被**压**进去的，像是从另一面用了极大的力量，把这些字母嵌进了金属本体里。\n\n你的指甲刮过那些凹痕的边缘。尖锐。\n\n温热。\n\n和之前两个一样的温度。你的心跳快了半拍。'}
     ],
     choices: [
       {text: '"我需要这个装置。"你尽量让自己的声音听起来坚决', tag: 'insist'},
@@ -2075,7 +2111,7 @@ STORIES.rome_bath = [
                '你愣了一下。\n\n' +
                '你犹豫了一下，然后……',
     hotspots: [
-      {id: 'r4_pillar', keyword: '大理石柱子', letterKey: 'r4_Z', content: '你走近其中一根柱子。表面刻着漩涡状的纹路，从底部盘旋而上。你用手掌贴上去——大理石是温的，蒸汽浸润的触感微微发涩。\n\n你的手指顺着纹路滑了一下，在一个凹痕处停住了。\n\n深度不均匀。不是同一批雕出来的。有些地方浅，有些地方深——像是在同一个图案上反复加深了很多年。\n\n在柱子底部，接近地面的阴影里，有一个非常浅的刻痕。你蹲下来看。\n\n是一个字母。Z。\n\n你盯着它看了很久。然后站起来，假装什么都没有发现。'},
+      {id: 'r4_pillar', keyword: '大理石柱子', letterKey: 'r4_Z', content: '你走近其中一根柱子。表面刻着漩涡状的纹路，从底部盘旋而上。你用手掌贴上去——大理石是温的，蒸汽浸润的触感微微发涩。\n\n你的手指顺着纹路滑了一下，在一个凹痕处停住了。\n\n深度不均匀。不是同一批雕出来的。有些地方浅，有些地方深——像是在同一个图案上反复加深了很多年。\n\n在柱子底部，接近地面的阴影里，有一个非常浅的刻痕。你蹲下来看。\n\n是一行磨损的字母。T W G N Y。\n\n你盯着它们看了很久。然后站起来，假装什么都没有发现。'},
       {id: 'r4_veteran', keyword: '角落里', content: '那个老人没有在看你。他一直在看更衣区的方向——但不时地，他会在扫视整个大厅的时候把目光在入口方向停一停。\n\n他的背挺得很直。他的右手一直放在膝盖上——掌心朝下，指节朝外。如果那里有武器，他拔出来不需要一秒钟。\n\n但你在意的不是这个。他的目光路线形成了一个固定的扫描模式。入口。更衣区。出口。蒸汽口。然后再来一轮。\n\n这是训练出来的。'}
     ],
     choices: [
@@ -2278,7 +2314,7 @@ var CLUES = {
     items: [
       { id: 'w1', text: '信件抬头写着「亲爱的艾德蒙」——那是留下地球仪的人的名字。十一年不间断的信件。老人已经不记得自己在写什么，只知道应该写。' },
       { id: 'w2', text: '「欢迎回来。」——地球仪在触碰的瞬间发出的声音。不是「你好」，不是「你是谁」。是「回来」。' },
-      { id: 'w3', text: '地球仪底座边缘蚀刻着一个细小的字母 {{gold|E}}。你不确定它原来就在那里，还是刚才亮了一下之后才出现的。' }
+      { id: 'w3', text: '地球仪底座边缘蚀刻着一行磨损的字母：J F W Y M。你不确定它原来就在那里，还是刚才亮了一下之后才出现的。' }
     ]
   },
   shanghai: {
@@ -2287,7 +2323,7 @@ var CLUES = {
     items: [
       { id: 's1', text: '「这个问题你应该反着问。」——白衣男人说。你不认识他。但他看你的眼神像在看不只是第一次见面的人。' },
       { id: 's2', text: '「又来了。」——星盘打开时，光的另一头传来的声音。这是第二个说「又」的东西。' },
-      { id: 's3', text: '星盘背面蚀刻着一个字母 {{gold|R}}。你用指腹摸过那个凹痕。尖锐。刻的人在很用力。' }
+      { id: 's3', text: '星盘背面蚀刻着磨损的字母：W T Z Y J。你用指腹摸过那些凹痕。尖锐。刻的人在很用力。' }
     ]
   },
   underground: {
@@ -2296,7 +2332,7 @@ var CLUES = {
     items: [
       { id: 'u1', text: '「你在被收集。」——那个父亲在装置被夺走前说。他女儿的照片掉在地上。你没有去捡。' },
       { id: 'u2', text: '世界安静了。绝对的安静。然后你发现自己在微笑——你不确定这个微笑是你的还是装置的。这个想法没有吓到你——这才是最吓人的部分。' },
-      { id: 'u3', text: '锚定器侧面印着一个字母 {{gold|O}}。你用指甲刮了一下边缘。尖锐。刻的人在很用力。' }
+      { id: 'u3', text: '锚定器侧面印着磨损的字母：E J F Q T Y。你用指甲刮了一下那些凹痕。尖锐。刻的人在很用力。' }
     ]
   },
   rome_bath: {
@@ -2305,7 +2341,7 @@ var CLUES = {
     items: [
       { id: 'r1', text: '「时间归零。」——铜盘上刻的文字。你不认识那种文字。但你读懂了。' },
       { id: 'r2', text: '「时间不是一条线。你已经在里面走了很多次了。」——退役老兵转述的留言。你发现自己并没有特别惊讶。' },
-      { id: 'r3', text: '铜盘背面刻着一个字母 {{gold|Z}}。你在柱子上也见过它。四个任务，四个字母——它们拼在一起是什么？' }
+      { id: 'r3', text: '铜盘背面刻着磨损的字母：T W G N Y。你在柱子上也见过类似的痕迹。四个任务，四组字母——它们拼在一起是什么？' }
     ]
   }
 };
@@ -4507,9 +4543,19 @@ function showClueReview(){
     missionClues.items.forEach(function(item, idx){
       var itemDiv = document.createElement('div');
       itemDiv.className = 'clue-item';
+      // 提取预览文本（取前30个字符）
+      var plainText = item.text.replace(/\{\{[^}]*\}\}/g, '');
+      var preview = plainText.length > 30 ? plainText.substring(0, 30) + '……' : plainText;
       itemDiv.innerHTML =
         '<div class="index">发现物 #' + (idx + 1) + '</div>' +
-        '<div class="text">' + item.text + '</div>';
+        '<div class="clue-preview">' + preview + '</div>' +
+        '<div class="expand-hint">▸ 点击展开</div>' +
+        '<div class="clue-detail">' +
+        '  <div class="text">' + processText(item.text) + '</div>' +
+        '</div>';
+      itemDiv.onclick = function(){
+        this.classList.toggle('expanded');
+      };
       section.appendChild(itemDiv);
     });
 
@@ -4530,7 +4576,7 @@ function showClueReview(){
     var hs = state.exploredHotspots || {};
     var allLetters = hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z'];
     if(allLetters){
-      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>如需重新评估，请输入密钥：<em>Z E R O T I M E</em>';
+      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>四组磨损字母，五步偏移，首字为钥。';
     } else {
       hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>部分异常记录尚未补全。<br>档案完整性：待核实。';
     }
@@ -5448,13 +5494,13 @@ function showClockEnding(){
     '<div style="font-size:56px;margin-bottom:20px;color:var(--red);">&#9760;</div>' +
     '<div style="color:var(--red);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结 局 · 强 制 改 造</div>' +
     '<div style="color:var(--red-dim);font-size:11px;letter-spacing:2px;margin-bottom:36px;">强制改造 · 完成</div>' +
-    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
-    '你没有选择的权利。\n\n' +
+    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+    processText('你没有选择的权利。\n\n' +
     '时钟从你面前拿起那块怀表。表盖是打开的。秒针在走。\n\n' +
     '滴答。滴答。滴答。\n\n' +
     '你的视线无法离开它。\n\n' +
     '你的眼角——有什么东西在旋转。螺旋。它在你的视野边缘慢慢展开。\n\n' +
-    '"{{gold|你本来可以自愿加入的。}}\"\n\n' +
+    '"{{gold|你本来可以自愿加入的。}}\\"\n\n' +
     '你能听到时钟的声音。很远。又很近。\n\n' +
     '"{{gold|但你选择了抵抗。所以我没有选择了。}}"\n\n' +
     '你的身体不再属于你。你的记忆正在被覆盖。\n\n' +
@@ -5467,7 +5513,7 @@ function showClockEnding(){
     '一段时间后——你醒来。\n' +
     '你穿着管理局的制服。\n' +
     '你不记得自己是怎么穿上的。\n\n' +
-    '但你不再问问题了。' +
+    '但你不再问问题了。') +
     '</div>' +
     '<button onclick="location.href=location.href.split(String.fromCharCode(63))[0]+String.fromCharCode(63)+String.fromCharCode(118)+Date.now()" style="' +
     '  margin-top:36px;' +
@@ -5557,8 +5603,8 @@ function showClockSpareEnding(){
     '<div style="font-size:56px;margin-bottom:20px;color:var(--blue);">&#10047;</div>' +
     '<div style="color:var(--blue);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结 局 · 各 走 各 路</div>' +
     '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">再见 · 记忆清除</div>' +
-    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
-    '破球的光带在你身后闪了一下——然后退回了暗处。\n\n' +
+    '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+    processText('破球的光带在你身后闪了一下——然后退回了暗处。\n\n' +
     '时钟把怀表翻回来。表盘朝上。\n\n' +
     '他看了你一眼。你没有躲开。\n\n' +
     '"{{red|可以。我尊重你的选择。}}"\n\n' +
@@ -5581,7 +5627,7 @@ function showClockSpareEnding(){
     '你拿着那个小东西，坐在沙发上，很久很久。\n\n' +
     '他再也没有回来过。\n\n' +
     '但你有时候会想到那个网址。\n\n' +
-    '……要不要再打开一次？' +
+    '……要不要再打开一次？') + +
     '</div>' +
     '<button onclick="location.href=location.href.split(String.fromCharCode(63))[0]+String.fromCharCode(63)+String.fromCharCode(118)+Date.now()" style="' +
     '  margin-top:36px;' +
@@ -5616,8 +5662,8 @@ function showFinalEnding(choice){
       '<div style="font-size:56px;margin-bottom:20px;color:var(--gold);">&#9733;</div>' +
       '<div style="color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:10px;">真结局 · 泽罗路线</div>' +
       '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">真结局 · 泽罗路线</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
-      '你选择了接受泽罗的帮助。\n\n' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      processText('你选择了接受泽罗的帮助。\n\n' +
       '泽罗履行了承诺。\n\n' +
       '第一步：他侵入了管理局的系统，将你的所有数据标记为"已删除"。\n' +
       '第二步：他用零号计划的技术，为你的朋友"夜行者"伪造了一份"任务完成"的报告。\n' +
@@ -5626,7 +5672,7 @@ function showFinalEnding(choice){
       '你在一个陌生的城市里。\n' +
       '你的手机里有一条未读消息：\n' +
       '「{{gold|去生活吧。不要回头。}}」\n\n' +
-      '发件人：未知。' +
+      '发件人：未知。') + +
       '</div>' +
       '<button onclick="location.href=location.href.split(String.fromCharCode(63))[0]+String.fromCharCode(63)+String.fromCharCode(118)+Date.now()" style="' +
       '  margin-top:36px;' +
@@ -5644,8 +5690,8 @@ function showFinalEnding(choice){
       '<div style="font-size:56px;margin-bottom:20px;color:var(--red);">&#9760;</div>' +
       '<div style="color:var(--red);font-size:18px;letter-spacing:4px;margin-bottom:10px;">结局 · 管理局路线</div>' +
       '<div style="color:var(--gold-faint);font-size:11px;letter-spacing:2px;margin-bottom:36px;">接受条款 · 管理局路线</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
-      '破球退回了暗处。时钟把怀表翻回来——表盘朝上，秒针继续走。\n\n' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      processText('破球退回了暗处。时钟把怀表翻回来——表盘朝上，秒针继续走。\n\n' +
       '他看了你一眼。点了点头。\n\n' +
       '{{po|你没有跟泽罗走。你选择留在这里。}}\n\n' +
       '你的朋友"夜行者"确实恢复了自由身。\n' +
@@ -5655,7 +5701,7 @@ function showFinalEnding(choice){
       '你的工作是：在各个时间线之间巡逻，确保没有人像泽罗一样"逃离"。\n\n' +
       '{{red|欢迎加入。你的训练将于明天开始。}}\n\n' +
       '（你偶尔会想起，曾经有个朋友跟你说过一个叫"zerotime"的密码。\n' +
-      '但你想不起来那个朋友的名字。）' +
+      '但你想不起来那个朋友的名字。）') + +
       '</div>' +
       '<button onclick="location.href=location.href.split(String.fromCharCode(63))[0]+String.fromCharCode(63)+String.fromCharCode(118)+Date.now()" style="' +
       '  margin-top:36px;' +
@@ -5674,8 +5720,8 @@ function showFinalEnding(choice){
       '<div style="font-size:56px;margin-bottom:20px;color:#888;">&#10047;</div>' +
       '<div style="color:#aaa;font-size:18px;letter-spacing:4px;margin-bottom:10px;">真结局 · 拒绝双方</div>' +
       '<div style="color:#666;font-size:11px;letter-spacing:2px;margin-bottom:36px;">真结局 · 全都拒绝</div>' +
-      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;white-space:pre-wrap;">' +
-      '你拒绝了所有选择。\n\n' +
+      '<div style="color:var(--text);font-size:13px;line-height:2.2;max-width:500px;text-align:left;">' +
+      processText('你拒绝了所有选择。\n\n' +
       '泽罗说得对——三个选项都是陷阱。\n\n' +
       '泽罗帮你处理了所有痕迹。\n' +
       '他抹去了你目前的身份和所在时间线上的影响。\n' +
@@ -5686,7 +5732,7 @@ function showFinalEnding(choice){
       '「{{gold|去生活吧。不要寻找答案。}}」\n\n' +
       '你决定，今天先去找个住处。\n' +
       '至于其他的事情——\n' +
-      '明天再说。' +
+      '明天再说。') + +
       '</div>' +
       '<button onclick="location.href=location.href.split(String.fromCharCode(63))[0]+String.fromCharCode(63)+String.fromCharCode(118)+Date.now()" style="' +
       '  margin-top:36px;' +
