@@ -2513,7 +2513,8 @@ var state = {
   puzzleSolved: false,  // 当前任务谜题是否已解
   puzzleFailed: false,  // 当前任务谜题是否失败
   cluesAvailable: false, // 一周目完成后是否解锁线索档案
-  exploredHotspots: {}     // 探索的热点（持久化到 localStorage）
+  exploredHotspots: {},    // 探索的热点（持久化到 localStorage）
+  zerolist: false          // 零号计划解锁状态（达成特定结局后变为true）
 };
 
 // 回顾模式日志：记录所有渲染过的叙事文本
@@ -2527,7 +2528,8 @@ function saveState(){
       exploredHotspots: state.exploredHotspots || {},
       endings: state.endings || [],
       missionResults: state.missionResults || {},
-      cluesAvailable: !!state.cluesAvailable
+      cluesAvailable: !!state.cluesAvailable,
+      zerolist: !!state.zerolist
     };
     localStorage.setItem('chrono_state', JSON.stringify(data));
   } catch(e) {}
@@ -2543,7 +2545,8 @@ function loadState(){
     if(data.endings) state.endings = data.endings;
     if(data.missionResults) state.missionResults = data.missionResults;
     if(data.cluesAvailable) state.cluesAvailable = data.cluesAvailable;
-    console.log('[loadState] restored week=' + state.week);
+    if(data.zerolist) state.zerolist = data.zerolist;
+    console.log('[loadState] restored week=' + state.week + ' zerolist=' + state.zerolist);
     return data;
   } catch(e) { return null; }
 }
@@ -4689,11 +4692,9 @@ function renderClockDialogue(){
             {text: '"我的朋友在哪？"', tag: 'ask_friend', nextStepId: 'friend_answer'},
             {text: '"什么测试？"', tag: 'ask_test', nextStepId: 'zero_plan_brief'}
           ];
-          var hs = state.exploredHotspots || {};
-          // 必须在一周目4个任务中收集齐 Z/E/R/O 四个字母，才解锁此选项
-          var zeroUnlocked = (hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z']);
-          console.log('[renderClockDialogue] zeroUnlocked=' + zeroUnlocked + ' hs=' + JSON.stringify(hs));
-          if(zeroUnlocked){
+          // 达成真结局·泽罗路线或管理局路线后，解锁零号计划选项
+          console.log('[renderClockDialogue] zerolist=' + state.zerolist);
+          if(state.zerolist){
             console.log('[renderClockDialogue] >>> zero option WILL be shown');
             c.push({text: '"我知道零号计划。"', tag: 'ask_zero', nextStepId: 'zero_clue'});
           }
@@ -5659,6 +5660,13 @@ function showFinalEnding(choice){
   main.style.display = 'flex';
   main.style.flexDirection = 'column';
   main.innerHTML = '';
+
+  // 达成真结局·泽罗路线或管理局路线时，解锁零号计划选项
+  if(choice === 'zelo' || choice === 'bureau'){
+    state.zerolist = true;
+    saveState();
+    console.log('[showFinalEnding] zerolist unlocked via ' + choice);
+  }
 
   var ev = document.createElement('div');
   ev.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 40px 120px;text-align:center;overflow-y:auto;';
