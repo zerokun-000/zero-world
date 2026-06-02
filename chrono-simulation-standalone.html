@@ -1598,7 +1598,7 @@ body[data-week="2"] #gate::before {
   </div>
   <div id="clue-content"></div>
   <div class="clue-footer">
-    <div class="hint">系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>四组磨损字母，五步偏移，首字为钥。</div>
+    <div class="hint">系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>达成特定结局后，新的选项将会解锁。</div>
     <button class="clue-close-btn" id="clue-close-btn">关 闭 档 案</button>
   </div>
 </div>
@@ -2625,10 +2625,9 @@ function tryUnlock(){
     document.getElementById('topbar-text').textContent = '时序管理局 · 招募测试';
     startSequence();
   } else if(val === PASSWORDS.week2){
-    // 检查是否收集齐 Z/E/R/O 四个字母，否则不开放二周目
-    var hs = state.exploredHotspots || {};
-    if(!(hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z'])){
-      gateErr.textContent = '似乎还有什么没收集到的……';
+    // 检查是否达成特定结局解锁零号计划，否则不开放二周目
+    if(!state.zerolist){
+      gateErr.textContent = '你还不知道这个密码的含义……';
       gateInput.value = '';
       return;
     }
@@ -4579,15 +4578,13 @@ function showClueReview(){
     };
   }
 
-  // 动态更新footer提示：根据字母收集状态显示不同文案
+  // 动态更新footer提示：根据零号计划解锁状态显示不同文案
   var hintEl = document.querySelector('#clue-view .clue-footer .hint');
   if(hintEl){
-    var hs = state.exploredHotspots || {};
-    var allLetters = hs['w1_E'] && hs['s2_R'] && hs['u3_O'] && hs['r4_Z'];
-    if(allLetters){
-      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>四组磨损字母，五步偏移，首字为钥。';
+    if(state.zerolist){
+      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>任务过程中发现的异常行为模式已存档。<br>零号计划已解锁。输入密钥可进入深层测试。';
     } else {
-      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>部分异常记录尚未补全。<br>档案完整性：待核实。';
+      hintEl.innerHTML = '系统备注：被选者表现出高度适应性。<br>部分异常记录尚未补全。<br>达成特定结局后，新的选项将会解锁。';
     }
   }
 }
