@@ -5,9 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>泽罗 · 角色关系图</title>
 <style>
-/* ============================================================
-   主题变量：夜间（默认=纯黑+红电路板） & 白天（白+金电路板）
-   ============================================================ */
+/*
+ * 泽罗 · 角色关系图 · 样式表
+ *
+ * 主题系统：
+ * - 夜间模式（默认）：纯黑背景 + 红色电路板
+ * - 白天模式：白色背景 + 金色电路板
+ * 通过 body.theme-light class 切换
+ *
+ * CSS 变量（:root）定义颜色方案
+ * 各 UI 组件按功能分区：
+ *   1. 门禁页（#gate）—— 密码输入
+ *   2. 画布（#cv）—— Canvas 渲染区域
+ *   3. 顶栏（#topbar）—— 搜索、主题切换、故事列表
+ *   4. 详情面板（#detail）—— 角色信息
+ *   5. 故事查看器（#story-viewer）—— 全屏故事阅读
+ *   6. 管理后台（#admin-panel）—— 访客记录查看
+ *   7. 各种模态框（#bureau-modal, #egg-name-modal 等）
+ *
+ * 设计原则：
+ * - 移动端优先，适配小屏
+ * - 电路板 SVG 背景动画
+ * - 零外部依赖
+ */
 :root{
   --bg:#000000;
   --text:#ddd;
@@ -990,13 +1010,48 @@ canvas:active{cursor:grabbing}
 </div>
 
 <script>
+/**
+ * 泽罗系列 · 人物关系图引擎
+ *
+ * 【架构概览】
+ * 本文件是泽罗系列的核心可视化工具，包含：
+ * 1. CSS 样式（<style> 块）—— 主题、布局、UI 组件
+ * 2. HTML 结构（<body>）—— Canvas + UI 面板
+ * 3. 主脚本（本 <script>）—— Canvas 渲染、交互、数据管理
+ * 4. zelo-adventure.js —— 冒险引擎（分支叙事）
+ * 5. zelo-admin.js —— 管理后台
+ *
+ * 【核心系统】
+ * - Canvas 2D 径向 Hub-Spoke 布局：点击角色滑到中心，关联角色排内圈
+ * - 密码门控：guest（访客只读）/ owner（专属全功能）/ egg（彩蛋模式）
+ * - 故事系统：15+ 篇内嵌故事，支持锚点跳转
+ * - 搜索：按角色名/故事名模糊搜索
+ * - 主题切换：暗色/亮色
+ *
+ * 【数据结构】
+ * - nodes[]: 角色节点 [{id, name, color, category, desc, stories[], storyAnchors{}}]
+ * - links[]: 关系连线 [{source, target, label, strength}]
+ * - _STORY_DATA[]: 完整故事内容 [{id, title, time, desc, content}]
+ * - storyIndex: 故事索引 {storyKey: {title, time, desc}}
+ *
+ * 【密码系统】
+ * - 'zero2026': 访客模式（禁用复制、隐藏部分内容）
+ * - 'zero000': 专属模式（全功能）
+ * - egg 模式: 隐藏彩蛋入口
+ *
+ * 【性能注意事项】
+ * - Canvas shadowBlur 是性能杀手，绝对不要用
+ * - 高 DPR（2x/3x）会翻倍像素量，resize 中按 devicePixelRatio 缩放
+ * - requestAnimationFrame 循环渲染，支持暂停/恢复
+ */
+
 // ===== 全局错误捕获 =====
 window.onerror = function(msg, src, line, col, err){
   console.error('[JS ERROR]', msg, 'at line', line, 'col', col);
   alert('JS错误: ' + msg + ' (行' + line + ')');
 };
 
-// ===== 主题切换 =====
+/** 主题切换 —— 暗色/亮色切换，通过 body class 控制 CSS 变量 */
 function toggleTheme(){
   var body = document.body;
   var isLight = body.classList.contains('theme-light');
@@ -1411,7 +1466,23 @@ links.forEach(function(l){
 var nodeMap = {};
 nodes.forEach(function(n){ nodeMap[n.id] = n; });
 
-// ===== PASSWORD GATE (guest / owner / egg) =====
+/**
+ * 密码门控系统 —— 三种访问模式
+ *
+ * - 'zero2026': 访客模式（guest）
+ *   - 只读，禁用复制
+ *   - 部分故事内容隐藏
+ *   - 访客身份记录到会话日志
+ *
+ * - 'zero000': 专属模式（owner）
+ *   - 全功能，可编辑
+ *   - 所有故事完整显示
+ *   - 管理后台入口可见
+ *
+ * - egg 模式: 彩蛋
+ *   - 需要特定触发条件
+ *   - 显示隐藏内容
+ */
 var isOwner = false;
 var _gateTry = 0;
 window.checkPw = function(){
@@ -1567,11 +1638,15 @@ document.getElementById('pw').addEventListener('keydown', function(e){
   if(e.key === 'Enter') checkPw();
 });
 
-// ===== CANVAS SETUP =====
+/**
+ * Canvas 初始化 —— 设置画布尺寸并处理 DPR 缩放
+ * 高 DPI 屏幕上按 devicePixelRatio 缩放，确保清晰度
+ */
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
 var W, H, DPR;
 
+/** 窗口 resize 时重新计算画布尺寸 */
 function resize(){
   DPR = window.devicePixelRatio || 1;
   W = window.innerWidth; H = window.innerHeight;
@@ -1582,7 +1657,20 @@ function resize(){
 resize();
 window.addEventListener('resize', resize);
 
-// ===== RADIAL HUB-SPOKE LAYOUT =====
+/**
+ * 径向 Hub-Spoke 布局系统
+ *
+ * 核心逻辑：
+ * - hub: 当前中心角色（点击其他角色后 hub 切换到该角色）
+ * - 内圈：与 hub 直接相连的角色，按角度均匀分布
+ * - 外圈：与 hub 无直接连接的角色
+ * - 连线：hub 与内圈角色之间的连线，颜色/粗细由 strength 决定
+ *
+ * 摄像机系统：
+ * - cam: {x, y, zoom} — 画布平移和缩放
+ * - 支持拖拽平移和滚轮缩放
+ * - 点击角色时平滑动画到中心
+ */
 var hub = 'zero';
 var hoveredNode = null;
 var highlightNode = null;
@@ -1591,10 +1679,10 @@ var isDragging = false;
 var dragSX = 0, dragSY = 0, dragCamX = 0, dragCamY = 0;
 var lastInteract = 0;
 var nodePos = {};
-var _connSet = {};        // 缓存：当前hub的连接节点集
-var _connSetHub = null;   // 缓存对应的hub id
-var _canvasBg = null;     // 缓存canvas背景色
-var _needsRedraw = true;  // 脏标记
+var _connSet = {};        // 缓存：当前 hub 的连接节点集
+var _connSetHub = null;   // 缓存对应的 hub id
+var _canvasBg = null;     // 缓存 canvas 背景色
+var _needsRedraw = true;  // 脏标记（true 时重绘）
 
 function rebuildConnSet(){
   _connSet = {};
@@ -1659,6 +1747,10 @@ computeLayout();
 // Initialize positions to targets (no animation on first load)
 nodes.forEach(function(n){ var p = nodePos[n.id]; if(p){ p.x = p.tx; p.y = p.ty; } });
 
+/**
+ * 设置中心角色 —— 切换 hub 并重新计算布局
+ * @param {string} id - 角色 ID
+ */
 function setHub(id){
   hub = id;
   rebuildConnSet();
@@ -1668,7 +1760,15 @@ function setHub(id){
   markDirty();
 }
 
-// ===== DRAW =====
+/**
+ * 主渲染函数 —— 每帧调用
+ * 1. 动画插值：节点位置平滑过渡（lerp 0.08）
+ * 2. 清除画布
+ * 3. 绘制连线（线宽/颜色由 strength 决定）
+ * 4. 绘制节点（圆形 + 文字标签）
+ * 5. 绘制高亮效果（hover/click 状态）
+ * 6. requestAnimationFrame 循环
+ */
 function draw(){
   // Animate positions smoothly
   var sp = 0.08;
@@ -1801,7 +1901,14 @@ function draw(){
   ctx.globalAlpha = 1;
 }
 
-// ===== INTERACTION =====
+/**
+ * 交互系统 —— 鼠标/触摸事件处理
+ * - 坐标转换：屏幕坐标 → 世界坐标（考虑摄像机平移和缩放）
+ * - 节点命中检测：遍历节点列表，检测点击/悬停位置
+ * - 拖拽平移：按住空白区域拖拽移动画布
+ * - 滚轮缩放：以鼠标位置为中心缩放
+ * - 点击节点：切换 hub + 显示详情面板
+ */
 function screenToWorld(sx, sy){
   return {
     x: (sx - W/2 - cam.x) / cam.zoom,
@@ -1933,7 +2040,11 @@ cv.addEventListener('touchend', function(e){
   pinchStart = null;
 });
 
-// ===== DETAIL PANEL =====
+/**
+ * 详情面板 —— 点击角色后显示的详细信息
+ * 包含：角色名、描述、关联故事列表、关系连线
+ * 支持锚点跳转：点击故事链接直接滚动到对应章节
+ */
 function _escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showDetail(id){
@@ -2227,7 +2338,12 @@ function resetView(){
   closeDetail();
 }
 
-// ===== STORY VIEWER (with anchor scroll) =====
+/**
+ * 故事查看器 —— 支持锚点跳转
+ * 打开指定故事并滚动到对应章节
+ * @param {string} sid - 故事 ID
+ * @param {string} [anchor] - 章节锚点标题（可选）
+ */
 function openStory(sid, anchor){
   var info = storyIndex[sid];
   if(!info) return;
@@ -2332,7 +2448,11 @@ function md2html(md){
   return html;
 }
 
-// ===== SEARCH =====
+/**
+ * 搜索系统 —— 按角色名/故事名模糊搜索
+ * 输入时实时过滤，显示下拉结果列表
+ * 点击结果 → 切换 hub 到该角色 + 高亮
+ */
 var searchInput = document.getElementById('search');
 var searchDrop = document.getElementById('search-drop');
 
@@ -2416,7 +2536,10 @@ window.showStoryList = showStoryList;
 window.checkPw = checkPw;
 window.selectCharSearch = selectCharSearch;
 
-// ===== MAIN LOOP =====
+/**
+ * 主渲染循环 —— requestAnimationFrame 驱动
+ * 支持暂停/恢复（弹出模态框时暂停渲染，避免性能浪费）
+ */
 var _zelo_raf_id = null;
 window._zelo_render_paused = false;
 function loop(){

@@ -5,6 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>时空模拟 · 时序管理局招募测试</title>
 <style>
+/*
+ * 时空模拟 · 样式表
+ *
+ * CSS 变量（:root）定义全局颜色方案
+ * 各 UI 组件按功能分区：
+ *   1. 背景粒子动画（#spiral-bg）
+ *   2. 引导页（#intro-page）
+ *   3. 密码登录门禁（#gate）
+ *   4. 主游戏界面（#main, #narrative-view）
+ *   5. 任务选择界面（#mission-select）
+ *   6. 谜题界面（#puzzle-view）
+ *   7. 线索档案界面（#clue-view）
+ *   8. 逃离关卡（#escape-quiz-view）
+ *   9. 热点弹窗（#hotspot-overlay）
+ *  10. 结局界面（#ending-view）
+ *  11. 二周目界面（#week2-view）
+ *  12. BGM 指示器（#bgm-indicator）
+ *  13. 催眠螺旋动画（#hypno-layer）
+ *
+ * 设计原则：
+ * - 深色背景（#080c12）+ 金色高亮（#c8a850）
+ * - 移动端优先，所有组件适配小屏
+ * - 零外部依赖，纯 CSS 动画
+ */
 :root{
   --bg:#080c12;
   --panel:rgba(6,10,16,.97);
@@ -1570,14 +1594,14 @@ body[data-week="2"] #gate::before {
 </div>
 </div><!-- /main -->
 
-<!-- 场景探索·热点弹出（在main之外，避免innerHTML替换时销毁） -->
+<!-- 场景探索 · 热点弹出（在 #main 之外，避免 innerHTML 替换时销毁） -->
 <div id="hotspot-overlay">
   <div class="hotspot-title">▼ 你仔细看了看</div>
   <div class="hotspot-body" id="hotspot-body"></div>
   <button class="hotspot-close" id="hotspot-close-btn">关 闭</button>
 </div>
 
-<!-- 逃离关卡·身份验证（在main之外，避免innerHTML替换时销毁） -->
+<!-- 逃离关卡 · 身份验证（在 #main 之外，避免 innerHTML 替换时销毁） -->
 <div id="escape-quiz-view">
   <div class="quiz-title">深 层 权 限 验 证</div>
   <div class="quiz-sub">深层权限验证 · 身份确认</div>
@@ -1606,18 +1630,24 @@ body[data-week="2"] #gate::before {
 <!-- BGM 模式指示器（调试） -->
 <div id="bgm-indicator"></div>
 
-<!-- 数据文件（先加载数据，再运行引擎） -->
+<!-- 数据文件（先加载叙事数据，再运行游戏引擎） -->
 <script>
-// ===========================================================
-//  时空模拟 · 叙事数据（第六版）
-//  一周目：调查失踪朋友 → 四个VR场景 → 心理暗示 → 强制坏结局
-//  二周目：zerotime登录 → Clock直接现身 → 三个选择 → 各自结局
-//
-//  核心规则：
-//  - VR头显内无物理纸条（系统通过HUD/场景叙事引导）
-//  - 每个任务情感基调不同，NPC有各自动机，不说统一谜语
-//  - "你"的情绪有层次：紧张/烦躁/怜悯/麻木，不只有心跳加速
-//  - 转变通过行为和选择表现，不靠旁白总结
+/**
+ * 时空模拟 · 叙事数据（第六版）
+ *
+ * 数据结构概览：
+ * - STORIES:  各任务的章节数据 {taskKey: [chapter, chapter, ...]}
+ *   每个 chapter: {title, narrative, choices, hotspots, narrative_before_{tag}, choices_after_{tag}}
+ * - ENDINGS:  结局文本 {endingKey: {badge, title, sub, text}}
+ * - CLUES:    线索档案 {taskKey: {title, icon, items: [{id, text}]}}
+ * - MISSION_HOTSPOT_IDS: 各任务的热点 ID 列表
+ * - PUZZLE_REQUIRED_TAGS: 谜题触发条件（分支标签门控）
+ * - MISSION_PUZZLES: 各任务的推理谜题 {taskKey: {question, answer, hints[], tag}}
+ *
+ * 分支系统：
+ * 章节可以通过 narrative_before_{tag} 和 choices_after_{tag} 实现分支
+ * tag 是玩家选择的标识符，用于匹配对应的分支叙事
+ */
 // ===========================================================
 var STORIES = {};
 var ENDINGS = {};
@@ -2293,7 +2323,11 @@ var MISSION_PUZZLES = {
 //  每个结局展示玩家从任务中带走的情感变化
 // ===========================================================
 
-// ===== 热点统计（用于探索完成度计算）=====
+/**
+ * 热点统计 —— 用于探索完成度计算
+ * 每个任务有2-3个可探索热点，玩家点击后记录到 state.exploredHotspots
+ * 所有热点探索完成后解锁字母收集（Z/E/R/O）
+ */
 var MISSION_HOTSPOT_IDS = {
   winslow:     ['w1_lamp', 'w1_curtain', 'w1_globe'],
   shanghai:    ['s2_balcony', 's2_ashtray', 's2_starplate'],
@@ -2301,9 +2335,14 @@ var MISSION_HOTSPOT_IDS = {
   rome_bath:   ['r4_pillar', 'r4_veteran']
 };
 
-// ===== 谜题触发条件（叙事分支标签门控）=====
-// 只有玩家走了包含答案的分支线，才弹出谜题
-// 如果玩家没走答案线 → 跳过答题，直接显示理解偏差结局
+/**
+ * 谜题触发条件 —— 叙事分支标签门控
+ * 只有玩家走了包含答案的分支线，才弹出推理谜题
+ * 如果玩家没走答案线 → 跳过答题，直接显示"理解偏差"结局
+ *
+ * 逻辑：在 loadChapter() 中检查 state.history 是否包含 requiredTags
+ * 如果不包含 → state.puzzleFailed = true → showEnding()
+ */
 var PUZZLE_REQUIRED_TAGS = {
   winslow: ['talk'],   // 选"和老人聊聊" → 看到"亲爱的艾德蒙"；选 approach 看不到
   shanghai: ['open']   // 选"打开星盘" → 听到"又来了"；选 close 听不到
@@ -2311,8 +2350,12 @@ var PUZZLE_REQUIRED_TAGS = {
   // rome_bath: 所有分支都包含答案（打开壁柜必定读到"时间归零"），无需限制
 };
 
-// ===== 线索档案数据 =====
-// 一周目完成后解锁，展示玩家在4个任务中经历的关键观察
+/**
+ * 线索档案数据 —— 一周目完成后解锁
+ * 展示玩家在4个任务中经历的关键观察
+ * 每个任务有3条线索，对应3个关键叙事节点
+ * 线索的 id 用于字母收集系统（Z/E/R/O）
+ */
 var CLUES = {
   winslow: {
     title: '舰队街14号 · 伦敦 1899',
@@ -2486,12 +2529,87 @@ ENDINGS = {
 /* ============================================================
    时空模拟 · 视觉小说引擎 v1.0
    管理局视角 · 招募测试版
+   ============================================================
+
+   【架构概览】
+
+   整个游戏是一个单文件 HTML 应用，包含：
+   1. CSS 样式（<style> 块）—— 所有 UI 组件的视觉定义
+   2. HTML 结构（<body>）—— DOM 元素，包括：
+      - #intro-page   引导页（游戏前的背景介绍）
+      - #gate         密码登录门禁
+      - #main         主游戏界面（叙事 + 选择）
+      - #puzzle-view  谜题界面
+      - #clue-view    线索档案界面
+      - #escape-quiz-view  逃离关卡身份验证
+      - #hotspot-overlay   场景探索热点弹窗
+   3. 叙事数据（第一个 <script>）—— STORIES / ENDINGS / HOTSPOTS / PUZZLES 等
+   4. 游戏引擎（本 <script>）—— 渲染、状态管理、BGM、交互逻辑
+
+   【游戏流程】
+
+   一周目：
+     引导页 → 密码登录(zero2026) → 任务选择 → 4个VR场景依次体验
+     → 每个场景有叙事 + 选择 + 谜题 → 完成后解锁线索档案
+     → 全部完成后进入"逃离关卡" → 强制坏结局
+
+   二周目：
+     密码登录(zerotime) → Clock 直接登场 → 三选一分支：
+       A. 跟 Clock 走 → 时钟结局（多种子结局）
+       B. 跟泽罗走 → 泽罗救友路线
+       C. 拒绝双方 → 逃跑 → 被抓 → 强制改造
+
+   【状态管理】
+
+   核心状态存储在 state 对象中，通过 localStorage 持久化：
+   - week:         当前周目（1 或 2）
+   - currentMission: 当前任务 key（'winslow'|'shanghai'|'underground'|'rome_bath'）
+   - currentChapter: 当前章节索引
+   - history:      玩家做出的所有选择记录
+   - endings:      已达成的结局列表
+   - missionResults: 各任务的完成结果
+   - missionOrder:  任务执行顺序（线性链）
+   - puzzleSolved:  当前任务谜题是否已解
+   - cluesAvailable: 一周目完成后是否解锁线索档案
+   - exploredHotspots: 已探索的场景热点（持久化）
+   - zerolist:     零号计划解锁状态
+
+   【BGM 系统】
+
+   使用 Web Audio API 实时合成 FM 音乐，每个场景有独立的 BGM 函数：
+   - startBGM_Default()   门禁页/默认 —— 五度drone + 潮汐扫频
+   - startBGM_London()    伦敦任务 —— D多利亚、大提琴质感
+   - startBGM_Shanghai()  上海任务 —— FM弦乐 + 钢琴琶音
+   - startBGM_Tokyo()     新宿任务 —— FM pad + 铃声 + 心跳脉冲
+   - startBGM_Rome()      罗马任务 —— FM弦乐 + 铃声回响
+   - startBGM_Clock()     Clock对话 —— 极慢扫频、detune五度
+   - startBGM_Zelo()      泽罗路线 —— tritone暗流、急促呼吸
+   - startBGM_Convergence() 汇聚结局 —— 大三和弦、高飘铃音
+
+   【密码系统】
+
+   - week1: 'zero2026'  → 进入一周目
+   - week2: 'zerotime'  → 进入二周目（需先完成一周目）
+   - reset: 'zeroreset' → 清除所有进度，回到初始状态
+
+   【文件依赖】
+
+   本文件完全独立（standalone），不依赖任何外部文件。
+   所有文本、样式、逻辑内联在单个 HTML 中。
    ============================================================ */
 
 (function(){
 'use strict';
 
-// ===== 背景模式切换（CSS data-mode，零JS动画开销）=====
+/**
+ * 切换背景粒子动画模式
+ * 通过修改 #spiral-bg 的 data-mode 属性，CSS 动画自动切换
+ * @param {'default'|'week2'|'enhanced'|null} mode - 模式名称
+ *   - 'default': 默认金色粒子
+ *   - 'week2':   二周目暗红粒子（更慢、更模糊）
+ *   - 'enhanced': 高能模式（更快、更亮）
+ *   - null/空:   恢复默认
+ */
 function setBgMode(mode){
   var bg = document.getElementById('spiral-bg');
   if(!bg) return;
@@ -2499,28 +2617,34 @@ function setBgMode(mode){
   else { bg.dataset.mode = mode; }
 }
 
-// ===== 状态 =====
+/**
+ * 游戏核心状态对象
+ * 所有运行时数据集中在此，便于序列化/反序列化
+ */
 var state = {
-  week: 1,
-  currentMission: null,
-  currentChapter: 0,
-  history: [],
-  endings: [],
-  missionResults: {},
-  // 线性任务链
-  missionOrder: ['winslow', 'shanghai', 'underground', 'rome_bath'],
-  missionIndex: 0,
-  puzzleSolved: false,  // 当前任务谜题是否已解
-  puzzleFailed: false,  // 当前任务谜题是否失败
-  cluesAvailable: false, // 一周目完成后是否解锁线索档案
-  exploredHotspots: {},    // 探索的热点（持久化到 localStorage）
-  zerolist: false          // 零号计划解锁状态（达成特定结局后变为true）
+  week: 1,                  // 当前周目：1=一周目（调查），2=二周目（Clock登场）
+  currentMission: null,     // 当前任务 key：'winslow'|'shanghai'|'underground'|'rome_bath'
+  currentChapter: 0,        // 当前章节索引（在 STORIES[mission] 数组中的位置）
+  history: [],              // 玩家选择历史：[{mission, chapter, choiceIndex, label}]
+  endings: [],              // 已达成的结局 key 列表
+  missionResults: {},       // 各任务结果：{missionKey: {completed, puzzleResult, choices: [...]} }
+  missionOrder: ['winslow', 'shanghai', 'underground', 'rome_bath'],  // 线性任务链执行顺序
+  missionIndex: 0,          // 当前在任务链中的位置（0-3）
+  puzzleSolved: false,      // 当前任务的推理谜题是否已解（解谜后才能进入下一任务）
+  puzzleFailed: false,      // 当前任务的推理谜题是否失败（3次机会用完）
+  cluesAvailable: false,    // 一周目完成后是否解锁线索档案（供二周目回顾）
+  exploredHotspots: {},     // 已探索的场景热点：{hotspotId: true}，持久化到 localStorage
+  zerolist: false           // 零号计划解锁状态（达成特定结局后变为 true，解锁隐藏内容）
 };
 
 // 回顾模式日志：记录所有渲染过的叙事文本
 window._narrativeLog = [];
 
-// ===== 状态持久化（localStorage）=====
+/**
+ * 将游戏状态序列化并保存到 localStorage
+ * 仅保存必要字段（week, exploredHotspots, endings, missionResults, cluesAvailable, zerolist）
+ * 保存键名：'chrono_state'
+ */
 function saveState(){
   try {
     var data = {
@@ -2535,6 +2659,10 @@ function saveState(){
   } catch(e) {}
 }
 
+/**
+ * 从 localStorage 恢复游戏状态
+ * @returns {Object|null} 恢复的数据对象，或 null（无存档/解析失败）
+ */
 function loadState(){
   try {
     var raw = localStorage.getItem('chrono_state');
@@ -2558,11 +2686,17 @@ function clearState(){
 // 页面加载时恢复状态
 loadState();
 
-// ===== 密码系统 =====
+/**
+ * 密码系统
+ * 三个密码控制游戏的不同入口：
+ * - week1: 进入一周目（线性任务链：伦敦→上海→新宿→罗马）
+ * - week2: 进入二周目（需先收集齐 Z/E/R/O 四个字母）
+ * - reset: 清除所有 localStorage 数据，回到初始状态
+ */
 var PASSWORDS = {
   week1: 'zero2026',
   week2: 'zerotime',
-  reset: 'zeroreset'   // 一切清零，强制刷新回到初始状态
+  reset: 'zeroreset'
 };
 
 // ===== 登录逻辑 =====
@@ -2572,8 +2706,12 @@ var gateErr = document.getElementById('gate-err');
 // gate-btn 使用 HTML 内联 onclick（最可靠），不再用 bindBtn
 gateInput.addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });  // 键盘回车保留 addEventListener
 
-// ===== 工具函数 =====
-// 通用按钮绑定（移动端友好）：cloneNode 去旧事件 + onclick 备用 + addEventListener
+/**
+ * 通用按钮事件绑定（移动端友好）
+ * 使用 cloneNode 替换元素来清除旧事件监听器，避免累积
+ * @param {string} id - 按钮 DOM 元素 ID
+ * @param {Function} handler - 点击事件处理函数
+ */
 function bindBtn(id, handler){
   var btn = document.getElementById(id);
   if(!btn){ console.log('[bindBtn] ' + id + ' not found'); return; }
@@ -2585,13 +2723,19 @@ function bindBtn(id, handler){
   console.log('[bindBtn] ' + id + ' bound');
 }
 
-// 清除 main 的内联样式，让 CSS 重新接管布局（防止移动端高度计算异常）
+/**
+ * 清除 #main 的内联样式，让 CSS 重新接管布局
+ * 防止移动端高度计算异常（inline style 优先级高于 CSS）
+ */
 function resetMain(){
   var main = document.getElementById('main');
   if(main) main.style.cssText = '';
 }
 
-// 隐藏所有视图
+/**
+ * 隐藏所有游戏视图，为切换到新视图做准备
+ * 遍历所有已知视图 ID，将 display 设为 'none'
+ */
 function hideAllViews(){
   resetMain();
   ['narrative-view','week2-view','ending-view','mission-select','gate','intro-page','clue-view','escape-quiz-view','hypno-layer','puzzle-view'].forEach(function(id){
@@ -2600,6 +2744,13 @@ function hideAllViews(){
   });
 }
 
+/**
+ * 密码验证入口 —— 根据输入密码决定游戏走向
+ * - 'zero2026' → 进入一周目线性任务链
+ * - 'zerotime' → 进入二周目（需先收集齐 Z/E/R/O 四个字母）
+ * - 'zeroreset' → 清除所有进度，刷新页面
+ * - 其他 → 显示错误提示 + 输入框微动效果
+ */
 function tryUnlock(){
   var val = gateInput.value.trim();
   gateErr.textContent = '';
@@ -2714,13 +2865,26 @@ document.addEventListener('click', function(e){
   }
 });
 
-// ===== BGM：舒缓环境音（低频垫音 + 慢泛音）=====
+/**
+ * BGM 系统 —— 基于 Web Audio API 的实时 FM 合成音乐
+ *
+ * 架构：
+ * - bgmCtx:      AudioContext 实例（首次用户交互后创建）
+ * - masterBGM:   主增益节点，所有 BGM 音频流经此处
+ * - bgmNodes:    当前活跃的所有音频节点（用于停止时清理）
+ * - bgmTimers:   所有 setTimeout 定时器（用于停止时清理）
+ * - bgmRunning:  BGM 是否正在播放
+ *
+ * 每个场景有独立的 startBGM_xxx() 函数，调用 stopBGM() 后切换
+ * FM 合成通过 _fmPiano/_fmString/_fmBell/_fmPad 四个辅助函数实现
+ */
 var bgmCtx = null;
 var bgmRunning = false;
 var bgmMode = '';
 var bgmNodes = [];   // 所有活跃的 oscillator / gain / 定时器 ID
 var bgmTimers = [];  // setTimeout 返回值，用于清理
 
+/** 停止当前 BGM 并清理所有音频资源 */
 function stopBGM(){
   bgmRunning = false;
   // 停止所有定时器
@@ -2737,7 +2901,14 @@ function stopBGM(){
   masterBGM = null;
 }
 
-// 辅助：创建并追踪 oscillator
+/**
+ * 辅助函数：创建并追踪 oscillator
+ * @param {string} type - 波形类型：'sine'|'square'|'sawtooth'|'triangle'
+ * @param {number} freq - 频率（Hz）
+ * @param {number} gainVal - 增益值（0-1）
+ * @param {AudioNode} [connectTo] - 连接到的节点（默认 masterBGM）
+ * @returns {OscillatorNode} 创建的振荡器
+ */
 function _osc(type, freq, gainVal, connectTo){
   var o = bgmCtx.createOscillator();
   o.type = type;
@@ -2751,7 +2922,12 @@ function _osc(type, freq, gainVal, connectTo){
   return o;
 }
 
-// 辅助：创建定时播放音符的循环
+/**
+ * 辅助函数：创建定时循环
+ * 在 bgmRunning 为 true 且 bgmMode 未切换时持续循环
+ * @param {number} interval - 循环间隔（毫秒）
+ * @param {Function} fn - 每次循环执行的函数，接收 currentTime 参数
+ */
 function _scheduleLoop(interval, fn){
   function loop(){
     if(!bgmRunning || bgmMode !== _currentMode) return;
@@ -2763,7 +2939,11 @@ function _scheduleLoop(interval, fn){
   bgmTimers.push(t);
 }
 
-// ===== FM合成辅助函数 =====
+/**
+ * FM 合成辅助函数 —— 四种音色的 FM 合成器
+ * FM 合成原理：用一个振荡器（调制器）调制另一个振荡器（载波器）的频率
+ * 产生丰富的谐波，模拟真实乐器音色
+ */
 // FM钢琴音色：载波+高八度调制波，快速衰减的调制指数
 function _fmPiano(freq, dur, vel, connectTo){
   vel = vel || 0.4;
@@ -2786,7 +2966,7 @@ function _fmPiano(freq, dur, vel, connectTo){
   return o;
 }
 
-// FM弦乐音色：多泛音叠加，每个泛音有轻微FM调制
+/** FM 弦乐音色 —— 多泛音叠加，每个泛音有轻微 FM 调制 */
 function _fmString(freq, dur, vel, connectTo){
   vel = vel || 0.3;
   var t = bgmCtx.currentTime;
@@ -2814,7 +2994,7 @@ function _fmString(freq, dur, vel, connectTo){
   return out;
 }
 
-// FM铃声音色：不和谐的载波/调制波比例
+/** FM 铃声音色 —— 不和谐的载波/调制波比例，产生金属质感 */
 function _fmBell(freq, dur, vel, connectTo){
   vel = vel || 0.2;
   var t = bgmCtx.currentTime;
@@ -2834,7 +3014,7 @@ function _fmBell(freq, dur, vel, connectTo){
   return o;
 }
 
-// FM氛围垫音：低频调制产生缓慢变化
+/** FM 氛围垫音 —— 低频调制产生缓慢变化的持续音 */
 function _fmPad(freq, dur, vel, connectTo){
   vel = vel || 0.2;
   var t = bgmCtx.currentTime;
@@ -3317,8 +3497,11 @@ function initMissionSelect(){
   document.getElementById('mission-select').style.display = 'flex';
 }
 
-// ===== MISSIONS 元数据 =====
-// （如果 data.js 里没定义，这里给一个备用）
+/**
+ * 任务元数据 —— 4个VR场景的基本信息
+ * 用于任务选择界面的卡片显示
+ * 如果外部 data.js 已定义 MISSIONS，则使用外部定义
+ */
 if(typeof MISSIONS === 'undefined'){
   var MISSIONS = [
     { key: 'winslow', title: '舰队街14号', sub: 'LONDON · 1899', desc: '雾。大雾。一个等了十一年的人。一个会发光的黄铜地球仪。和一只在暗处看着你的异瞳。', icon: '&#127963;' },
@@ -3367,7 +3550,13 @@ function startNextMission(){
   startMission(key);
 }
 
-// ===== 加载章节 =====
+/**
+ * 加载当前任务的当前章节
+ * 核心逻辑：
+ * 1. 检查是否到达任务末尾 → 触发谜题或结局
+ * 2. 处理分支章节匹配（根据玩家选择历史查找对应的叙事分支）
+ * 3. 调用 renderChapter() 渲染
+ */
 function loadChapter(){
   var mission = STORIES[state.currentMission];
   if(!mission || state.currentChapter >= mission.length){
@@ -3430,7 +3619,19 @@ function loadChapter(){
   renderChapter(chapter);
 }
 
-// ===== 渲染章节（分段渐进显示）=====
+/**
+ * 渲染单个章节的完整 UI
+ * 包含：头部（返回按钮 + 章节标题 + 任务标签）+ 叙事体（分页）+ 选择按钮
+ *
+ * 分页逻辑：叙事文本按 \n\n 拆分为段落，每4段合并为一页
+ * 翻页时淡入淡出切换，末页显示选择按钮
+ *
+ * @param {Object} chapter - 章节对象，包含：
+ *   - title: 章节标题
+ *   - narrative: 叙事文本（或 narrative_before_{tag} 分支文本）
+ *   - choices: 选择数组 [{text, tag}]
+ *   - hotspots: 可点击热点 [{id, keyword, content}]
+ */
 function renderChapter(chapter){
   var nv = document.getElementById('narrative-view');
 
@@ -3594,7 +3795,12 @@ function bindPageHotspots(textDiv, hotspots){
   });
 }
 
-// ===== 获取叙事文本 =====
+/**
+ * 获取章节的叙事文本（支持分支匹配）
+ * 优先级：chapter.narrative → narrative_before_{lastTag} → '（叙事内容缺失）'
+ * @param {Object} chapter - 章节对象
+ * @returns {string} 叙事文本
+ */
 function getNarrative(chapter){
   if(chapter.narrative) return chapter.narrative;
 
@@ -3609,7 +3815,12 @@ function getNarrative(chapter){
   return chapter.narrative || '（叙事内容缺失）';
 }
 
-// ===== 获取选择项 =====
+/**
+ * 获取章节的选择项（支持分支匹配）
+ * 优先级：choices_after_{lastTag} → chapter.choices → []
+ * @param {Object} chapter - 章节对象
+ * @returns {Array<{text: string, tag: string}>} 选择项数组
+ */
 function getChoices(chapter){
   var hist = state.history.map(function(h){ return h.tag; });
 
@@ -3622,7 +3833,17 @@ function getChoices(chapter){
   return chapter.choices || [];
 }
 
-// ===== 做出选择 =====
+/**
+ * 处理玩家选择
+ * 1. 记录选择到 history（"继续"按钮不记录）
+ * 2. 推进 currentChapter
+ * 3. 跳过不匹配的分支章节（避免落入其他分支）
+ * 4. 加载下一章节
+ *
+ * @param {Object} choice - 选择对象 {text: string, tag: string}
+ *   - tag 用于分支匹配和谜题答案判定
+ *   - 'continue' 是特殊的自动继续标记，不写入历史
+ */
 function makeChoice(choice){
   // 自动"继续"不写入 history，保留上一个有意义的选择结果
   if(choice.tag !== 'continue'){
@@ -3657,7 +3878,19 @@ window.backToMissions = function(){
   document.getElementById('mission-select').style.display = 'flex';
 };
 
-// ===== 处理文本（金色文字 + 批注 + 红色强调）=====
+/**
+ * 处理叙事文本中的特殊标记，转换为 HTML
+ * 支持的标记：
+ *   {name}     → '特工'（玩家代称）
+ *   {role}     → '外勤调查员'（玩家角色）
+ *   {{gold|文字}} → 金色高亮文字（管理局/系统消息）
+ *   {{red|文字}}  → 红色强调文字（警告/危险）
+ *   {{po|文字}}   → 批注样式文字（旁白/解释）
+ *   \n         → <br> 换行
+ *
+ * @param {string} raw - 原始叙事文本
+ * @returns {string} 处理后的 HTML 字符串
+ */
 function processText(text){
   if(!text) return '';
 
@@ -3792,6 +4025,17 @@ function clearCountdown(){
   countdownSeconds = 0;
 }
 
+/**
+ * 显示推理谜题界面
+ * 谜题系统：3次机会 + 渐进提示 + 理解偏差后果
+ * 玩家可在答题过程中"回顾故事"翻阅线索
+ *
+ * @param {Object} puzzleData - 谜题数据 {question, answer, hints[], tag}
+ *   - question: 问题文本
+ *   - answer: 正确答案（字符串或正则）
+ *   - hints: 答错后依次显示的提示数组
+ *   - tag: 用于标记解答结果的标签
+ */
 function showPuzzle(puzzleData){
   // 隐藏其他视图
   hideAllViews();
@@ -3890,7 +4134,11 @@ function showPuzzle(puzzleData){
   };
 }
 
-// ===== 场景探索 · 热点弹出 =====
+/**
+ * 场景探索 · 热点弹窗
+ * 玩家点击叙事文本中的热点关键词后弹出详细内容
+ * 记录探索状态到 state.exploredHotspots，关联字母线索
+ */
 var currentMissionHotspots = null;
 
 function showHotspotContent(id){
@@ -3930,7 +4178,13 @@ function showHotspotContent(id){
   };
 }
 
-// ===== 逃离关卡 · 身份验证 =====
+/**
+ * 逃离关卡 · 身份验证
+ * 一周目全部完成后，玩家需要回答3个问题才能"逃离"
+ * 问题基于4个任务中的关键叙事节点
+ * 答错 → 强制坏结局
+ * 答对 → 进入二周目入口
+ */
 var ESCAPE_QUIZ = [
   {
     question: '在伦敦舰队街14号，你碰到地球仪时，它对你说的第一句话是？',
@@ -4092,7 +4346,12 @@ function handleQuizAnswer(correct, btn){
   content.appendChild(nextBtn);
 }
 
-// ===== 推理验证关卡（真结局路径）=====
+/**
+ * 推理验证关卡 —— 真结局路径
+ * 二周目中，玩家选择"跟泽罗走"后需要通过推理验证
+ * 答对 → 进入泽罗救友结局
+ * 答错 → 被管理局抓获，强制改造
+ */
 function showReasoningQuiz(){
   // 隐藏当前视图
   hideAllViews();
@@ -4294,7 +4553,12 @@ function getMissionSub(key){
   return m ? m.sub : '';
 }
 
-// ===== 显示结局（线性链）=====
+/**
+ * 显示结局页面（线性任务链）
+ * 根据 state.history 中的选择记录和 puzzleSolved/puzzleFailed 状态
+ * 决定显示哪个结局文本
+ * 结局数据存储在 ENDINGS 对象中，按任务和选择分支索引
+ */
 function showEnding(){
   // 清理回顾模式
   var rb = document.getElementById('review-back-btn');
@@ -4378,7 +4642,11 @@ function showEnding(){
   bindBtn('end-next-btn', startNextMission);
 }
 
-// ===== 汇聚结局：催眠螺旋 + 最终臣服 =====
+/**
+ * 汇聚结局 —— 一周目全部4个任务完成后的最终结局
+ * 包含催眠螺旋动画 + 最终臣服叙事
+ * 这是一周目的"真结局"，玩家在完成所有VR场景后被管理局正式收编
+ */
 function showConvergenceEnding(){
   setBGMMode('convergence');
 
@@ -4592,7 +4860,11 @@ function showClueReview(){
   }
 }
 
-// ===== 二周目过渡：深层权限检测 → Clock直接登场 =====
+/**
+ * 二周目过渡动画 —— 深层权限检测 → Clock 直接登场
+ * 显示"系统检测到深层权限……"的渐入文字动画
+ * 4秒后自动进入 Clock 对话
+ */
 function showWeek2Transition(){
   document.getElementById('mission-select').style.display = 'none';
   document.getElementById('narrative-view').style.display = 'none';
@@ -4623,7 +4895,17 @@ function showWeek2Transition(){
   setTimeout(startClockDialogue, 4000);
 }
 
-// ===== 时钟先生（Clock）对话 =====
+/**
+ * 时钟先生（Clock）对话系统
+ * 二周目的核心交互：玩家与 Clock 进行多轮对话
+ * 对话流程由 clockStep 控制，每步显示不同叙事 + 选择
+ *
+ * 对话结构：
+ * step 0: Clock 自我介绍 + 第一个问题
+ * step 1: Clock 追问 + 玩家选择
+ * step 2: Clock 揭示真相 + 三选一分支
+ * step 3: 根据选择进入不同结局路线
+ */
 var clockStep = 0;
 var dialogueSteps = null;       // Clock 对话步骤数据（全局，供各函数引用）
 var pendingClockChoice = null;  // 暂存玩家在第三步的原始选择
@@ -5105,9 +5387,17 @@ function endClockPathZelo(){
   showZeloRescue();
 }
 
-// ===== 泽罗路线：完整的救友结局 =====
+/**
+ * 泽罗路线 —— 完整的救友结局
+ * 二周目中玩家选择"跟泽罗走"后的完整叙事流程
+ * 包含多个场景：泽罗现身 → 营救过程 → 终幕选择
+ *
+ * 关键变量：
+ * - zeloStep: 当前场景步骤
+ * - zeloChoice: 终幕分支选择（用于结局判定）
+ */
 var zeloStep = 0;
-var zeloChoice = '';  // 追踪终幕分支选择
+var zeloChoice = '';
 function showZeloRescue(){
   zeloStep = 0;
   zeloChoice = '';
@@ -5765,7 +6055,15 @@ function showFinalEnding(choice){
   main.appendChild(ev);
 }
 
-// ===== 结局判断（一周目强制坏结局）=====
+/**
+ * 结局判断 —— 根据任务和选择历史决定结局
+ * 一周目：强制坏结局（玩家在模拟中被潜移默化改造）
+ * 二周目：根据选择返回真结局（good/hidden）
+ *
+ * @param {string} mk - 任务 key（'winslow'|'shanghai'|'underground'|'rome_bath'）
+ * @param {Array} hist - 选择历史数组
+ * @returns {string} 结局 key（如 'winslow_bad', 'shanghai_good'）
+ */
 function getEndingKey(mk, hist){
   // 一周目：强制坏结局。你在模拟中被潜移默化改造，任务必然失败
   if(state.week === 1){
@@ -5779,8 +6077,12 @@ function getEndingKey(mk, hist){
   return mk + '_good';
 }
 
-// ===== 初始化 =====
-// 确保 MISSIONS 存在
+/**
+ * 初始化 —— 页面加载后的最终设置
+ * 1. 确保 MISSIONS 元数据存在
+ * 2. 暴露 tryUnlock 给 HTML onclick 使用
+ * 3. IIFE 闭包结束
+ */
 if(typeof MISSIONS === 'undefined'){
   window.MISSIONS = [
     { key: 'winslow', title: '舰队街14号', sub: 'LONDON · 1899', desc: '雾。大雾。一个等了十一年的人。一个会发光的黄铜地球仪。和一只在暗处看着你的异瞳。', icon: '&#127963;' },

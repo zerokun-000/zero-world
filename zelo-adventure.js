@@ -1,16 +1,53 @@
-/* zelo-adventure.js — 时空模拟 · 视觉小说引擎 v3.0
-   核心设计：
-   - 选一个任务 → 在这个故事里走到结局
-   - 每个故事5章，3个结局（好/坏/隐藏）
-   - 选择影响故事走向，累积选择决定结局
-   - 回顾完整旅程
-*/
+/**
+ * 泽罗系列 · 冒险引擎 v3.0
+ *
+ * 【核心设计】
+ * - 选一个任务 → 在这个故事里走到结局
+ * - 每个故事5章，3个结局（好/坏/隐藏）
+ * - 选择影响故事走向，累积选择决定结局
+ * - 回顾完整旅程
+ *
+ * 【数据结构】
+ * - MISSIONS: 任务元数据 [{key, title, sub, desc, icon}]
+ * - STORIES: 各任务的章节数据 {taskKey: [chapter, ...]}
+ *   每个 chapter: {title, narrative, choices: [{text, tag}]}
+ * - ENDINGS: 结局数据 {taskKey: [{title, text, badge}]}
+ *   好结局索引0，坏结局索引1，隐藏结局索引2
+ *
+ * 【状态管理】
+ * _adv 对象存储当前冒险状态：
+ * - active: 是否正在进行冒险
+ * - missionKey: 当前任务 key
+ * - chapterIdx: 当前章节索引
+ * - playerName: 玩家代号
+ * - playerRole: 玩家角色（field/archive/tech/new）
+ * - timer: 倒计时定时器
+ * - timeLeft: 剩余时间（秒）
+ * - history: 选择历史 [{tag, text}]
+ * - generating: 是否正在生成内容
+ *
+ * 【结局判定】
+ * 根据 history 中的选择标签统计：
+ * - 分析型选择（analytical/examine/cautious）多 → 好结局
+ * - 行动型选择（direct/charge/rush）多 → 坏结局
+ * - 特定组合 → 隐藏结局
+ *
+ * 【存档系统】
+ * - 最多5个存档槽位
+ * - 存储到 localStorage: 'zelo_adventure_save_{slot}'
+ * - 包含完整状态：任务、章节、选择历史、剩余时间
+ */
 (function(){
 'use strict';
 
+/** 冒险总时长（秒）—— 15分钟倒计时 */
 var ADVENTURE_TOTAL_SECONDS = 900;
+/** 最大存档槽位数 */
 var ADVENTURE_MAX_SAVE_SLOTS = 5;
 
+/**
+ * 冒险状态对象 —— 存储当前冒险的所有运行时数据
+ */
 var _adv = {
   active: false, missionKey: null, chapterIdx: 0,
   playerName: '', playerRole: 'field',
@@ -257,7 +294,13 @@ var ENDINGS = {
     text:'\u4efb\u52a1\u65f6\u95f4\u5df2\u8017\u5c3d\u3002\u4f60\u88ab\u81ea\u52a8\u4f20\u9001\u56de\u7ba1\u7406\u5c40\uff0c\u4f46\u6ca1\u6709\u5b8c\u6210\u4efb\u52a1\u3002\n\n\u65f6\u95f4\u7ebf\u8fdb\u5165\u5f85\u5b9a\u72b6\u6001\u3002\u4f60\u53ef\u4ee5\u91cd\u65b0\u5f00\u59cb\uff0c\u5c1d\u8bd5\u5728\u66f4\u77ed\u7684\u65f6\u95f4\u5185\u627e\u5230\u7b54\u6848\u3002'}
 };;
 
-// ===== getEndingKey =====
+/**
+ * 结局判定 —— 根据任务和选择历史决定结局
+ * 统计历史中分析型/行动型/隐藏型选择的数量
+ * @param {string} mk - 任务 key
+ * @param {Array} hist - 选择历史 [{tag, text}]
+ * @returns {number} 结局索引（0=好, 1=坏, 2=隐藏）
+ */
 function getEndingKey(mk, hist){
   var t = hist.map(function(h){return h.tag;});
   switch(mk){
@@ -288,7 +331,13 @@ function getEndingKey(mk, hist){
   return mk+'_good';
 }
 
-// ===== 动态任务报告：根据实际选择历史生成 =====
+/**
+ * 动态任务报告生成 —— 根据实际选择历史生成个性化报告
+ * 分析每个选择的标签，生成对应的评语和总结
+ * @param {string} mk - 任务 key
+ * @param {Array} hist - 选择历史
+ * @returns {string} HTML 格式的任务报告
+ */
 function generateMissionReport(mk, hist){
   var t = hist.map(function(h){return h.tag;});
   var lines = [];
@@ -411,7 +460,11 @@ function generateMissionReport(mk, hist){
   return lines.join('\n');
 }
 
-// ===== UI =====
+/**
+ * UI 控制函数
+ */
+
+/** 显示指定面板，隐藏其他面板 */
 function showPanel(id){
   ['adv-create','adv-saves','adv-ending','adv-mission-select'].forEach(function(n){
     var el=document.getElementById(n); if(el) el.classList.remove('show');
@@ -427,13 +480,17 @@ function showGame(){
   var ne=document.getElementById('adv-narrative'); if(ne) ne.innerHTML='';
   var ce=document.getElementById('adv-choices'); if(ce) ce.innerHTML='';
 }
+/** 更新状态栏文本 */
 function updateStatus(t){var el=document.getElementById('adv-status'); if(el) el.textContent=t;}
+
+/** 更新倒计时显示 */
 function updateTimer(){
   var el=document.getElementById('adv-timer'); if(!el) return;
   var m=Math.floor(_adv.timeLeft/60),s=_adv.timeLeft%60;
   el.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   el.classList.toggle('warn',_adv.timeLeft<=300);
 }
+/** 启动倒计时（每秒更新，时间到则强制结束） */
 function startTimer(){
   if(_adv.timer) clearInterval(_adv.timer);
   _adv.timer=setInterval(function(){
@@ -441,6 +498,10 @@ function startTimer(){
     if(_adv.timeLeft<=0){clearInterval(_adv.timer);_adv.timer=null;showEnding('timeout');}
   },1000);
 }
+/**
+ * 渲染任务选择界面
+ * 显示4个任务卡片，点击选择后开始冒险
+ */
 function renderMissionSelect(){
   showPanel('adv-mission-select');
   var c=document.getElementById('adv-mission-list'); if(!c) return;
@@ -457,6 +518,11 @@ window._advSelectMission=function(k){
   _adv.active=true; _adv.timeLeft=ADVENTURE_TOTAL_SECONDS;
   startTimer(); updateTimer(); showGame(); renderChapter();
 };
+/**
+ * 渲染当前章节
+ * 显示叙事文本 + 选择按钮
+ * @param {string} [choiceText] - 上一章的选择文本（显示在顶部）
+ */
 function renderChapter(choiceText){
   if(_adv.generating) return; _adv.generating=true;
   var story=STORIES[_adv.missionKey];
@@ -509,6 +575,11 @@ window._advEndMission=function(){
   var endKey=getEndingKey(_adv.missionKey,_adv.history);
   showEnding(endKey);
 };
+/**
+ * 显示结局页面
+ * 根据结局索引显示对应文本 + 任务报告
+ * @param {string} key - 结局 key（如 'winslow_0'）
+ */
 function showEnding(key){
   showPanel('adv-ending');
   var end=ENDINGS[key]||ENDINGS.timeout;
@@ -582,6 +653,11 @@ function closePanel(){
   document.body.style.overflow='';
   if(typeof resumeRender==='function') resumeRender();
 }
+/**
+ * 存档系统
+ */
+
+/** 保存当前冒险状态到第一个空槽位 */
 function advSaveGame(silent){
   var slot=findEmptySlot();
   if(slot===-1&&!silent){showToast('\u5b58\u6863\u4f4d\u5df2\u6ee1');return;}
@@ -591,12 +667,14 @@ function advSaveGame(silent){
   var s=getSaves(); s[slot]=d;
   try{localStorage.setItem('_zelo_adv_saves',JSON.stringify(s));if(!silent)showToast('\u5b58\u6863\u5b8c\u6210');}catch(e){if(!silent)showToast('\u5b58\u6863\u5931\u8d25');}
 }
+/** 从指定槽位加载存档 */
 function advLoadGame(idx){
   var s=getSaves(),sv=s[idx]; if(!sv) return;
   _adv.playerName=sv.playerName;_adv.playerRole=sv.playerRole;_adv.missionKey=sv.missionKey;
   _adv.chapterIdx=sv.chapterIdx||0;_adv.history=sv.history||[];_adv.timeLeft=sv.timeLeft||ADVENTURE_TOTAL_SECONDS;
   _adv.active=true; startTimer();updateTimer();showGame();renderChapter();
 }
+/** 删除指定槽位的存档 */
 function advDeleteSlot(idx){
   var s=getSaves();s[idx]=null;
   try{localStorage.setItem('_zelo_adv_saves',JSON.stringify(s));renderSaveSlots();}catch(e){}
@@ -622,11 +700,16 @@ window._advLoadSlot=advLoadGame;
 window._advDelSlot=advDeleteSlot;
 window.showPanel=showPanel;
 window.advSaveGame=advSaveGame;
+/** 显示 toast 提示消息 */
 function showToast(msg){
   var old=document.querySelector('.adv-toast'); if(old) old.remove();
   var t=document.createElement('div');t.className='adv-toast';t.textContent=msg;
   document.body.appendChild(t); setTimeout(function(){if(t.parentNode)t.remove();},2200);
 }
+/**
+ * 初始化冒险引擎
+ * 绑定开始按钮事件，验证输入后启动冒险
+ */
 function init(){
   var btn=document.getElementById('adv-start-btn');
   if(btn) btn.addEventListener('click',function(){
